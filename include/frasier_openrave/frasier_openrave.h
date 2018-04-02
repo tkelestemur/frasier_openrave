@@ -11,6 +11,12 @@
 #include <openrave/openrave.h>
 #include <openrave/kinbody.h>
 #include <openrave/planningutils.h>
+#include <openrave/geometry.h>
+
+#include <json/json.h>
+#include <trajopt/problem_description.hpp>
+#include <trajopt/kinematic_terms.hpp>
+#include <trajopt/trajectory_costs.hpp>
 
 // Other
 #include <boost/thread/thread.hpp>
@@ -32,8 +38,11 @@ public:
   void startThreads();
   void startROSSpinner();
 
-  void planToConf();
-  void initPlanner();
+  void initRRTPlanner();
+  void planToConf(std::vector<double>& q);
+  void solveIK();
+  void computeTrajectory();
+
 
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
 
@@ -43,6 +52,7 @@ private:
   sensor_msgs::JointState joints_;
   std::string joint_state_topic_;
   std::string robot_name_, manip_name_, planner_name_;
+  std::string package_path_, config_path_, worlds_path_;
   std::vector<std::string> joint_names_;
 
   bool joint_state_flag_, run_viewer_flag_, run_joint_updater_flag_;

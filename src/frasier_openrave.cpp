@@ -8,6 +8,10 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n) : nh_(n){
   joint_state_sub_ = nh_.subscribe(joint_state_topic_, 1, &FRASIEROpenRAVE::jointSensorCb, this);
   robot_name_ = "hsrb";
 
+  package_path_ = ros::package::getPath("frasier_openrave");
+  worlds_path_ = package_path_ + "/worlds/";
+  config_path_ = package_path_ +"/config/";
+
   // OpenRAVE
   OpenRAVE::RaveInitialize(true);
   env_ = OpenRAVE::RaveCreateEnvironment();
@@ -27,9 +31,18 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n) : nh_(n){
 
 FRASIEROpenRAVE::~FRASIEROpenRAVE(){
   env_->Destroy();
-  viewer_->quitmainloop();
-  viewer_thread_.join();
-  joint_state_thread_.join();
+
+
+  if (run_joint_updater_flag_) {
+    joint_state_thread_.join();
+  }
+
+  if (run_viewer_flag_) {
+    viewer_->quitmainloop();
+    viewer_thread_.join();
+  }
+
+
 }
 
 
@@ -51,9 +64,9 @@ void FRASIEROpenRAVE::setViewer(){
 
 
 bool FRASIEROpenRAVE::LoadHSR(){
-  std::string path = ros::package::getPath("frasier_openrave");
+
   std::string world_path;
-  world_path = path + "/worlds/hsr_whole_body.xml";
+  world_path = worlds_path_ + "hsr_arm_base.xml";
   bool success = env_->Load(world_path);
 
   hsr_ = env_->GetRobot(robot_name_);

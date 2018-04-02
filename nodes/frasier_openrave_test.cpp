@@ -7,14 +7,17 @@ int main(int argc, char **argv) {
 
     FRASIEROpenRAVE frasier_or(nh);
 
-    if (frasier_or.LoadHSR()) {
+      frasier_or.LoadHSR();
 
       frasier_or.startThreads();
       ros::Duration(2.0).sleep();
-      frasier_or.initPlanner();
-      frasier_or.planToConf();
+      // frasier_or.initPlanner();
+
+      // std::vector<double> q = {0.5, 0, 0, 0, 0, 0, 0, 0};
+
+      frasier_or.computeTrajectory();
       frasier_or.startROSSpinner();
-    }
+
 
     return 0;
 }

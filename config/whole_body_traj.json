@@ -1,0 +1,29 @@
+{
+  "basic_info" : {
+    "n_steps" : 10,
+    "manip" : "whole_body",
+    "start_fixed" : true
+  },
+  "costs" : [
+  {
+    "type" : "joint_vel",
+    "params": {"coeffs" : [1]}
+  }
+  ],
+  "constraints" : [
+
+  {
+    "type" : "pose",
+    "params" : {"xyz" : [2.0, 0.5, 0.8],
+                "wxyz": [0.0, 0.707, 0.0, 0.707],
+                "link": "hand_palm_link",
+                "timestep" : 9
+                }
+
+  }
+  ],
+
+  "init_info" : {
+      "type" : "stationary"
+  }
+}

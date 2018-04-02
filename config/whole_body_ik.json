@@ -1,0 +1,22 @@
+{
+  "basic_info" : {
+    "n_steps" : 1,
+    "manip" : "whole_body",
+    "start_fixed" : false
+  },
+  "costs" : [
+  {
+    "type" : "pose",
+    "params": {
+      "xyz" : [1.0, 0.0, 0.8],
+      "wxyz": [0.0, 0.707, 0.0, 0.707],
+      "link" : "hand_palm_link",
+      "pos_coeffs" : [10, 10, 10],
+      "rot_coeffs" : [10, 10, 10]
+    }
+  }
+  ],
+  "init_info" : {
+    "type" : "stationary"
+  }
+}

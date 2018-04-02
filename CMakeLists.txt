@@ -17,7 +17,11 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 # find_package(Eigen REQUIRED COMPONENTS)
 find_package(OpenRAVE REQUIRED)
+# find_package(Eigen REQUIRED)
 set(OpenRAVE_BOTH_LIBRARIES ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
+set(trajopt_LIBRARIES /home/tarik/develop/robotics/trajopt/build/lib/libjson.so /home/tarik/develop/robotics/trajopt/build/lib/libtrajopt.so
+/home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so /home/tarik/develop/robotics/trajopt/build/lib/libosgviewer.so)
+message(STATUS "dir='${trajopt_SOURCE_DIR}'")
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -109,7 +113,7 @@ catkin_package(
  INCLUDE_DIRS include
  LIBRARIES frasier_openrave
  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs
-#  DEPENDS system_lib
+ # DEPENDS Eigen
 )
 
 ###########
@@ -123,12 +127,19 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 	SYSTEM
   ${OpenRAVE_INCLUDE_DIRS}
-	# ${Eigen_INCLUDE_DIRS}
+	${Eigen_INCLUDE_DIRS}
+)
+
+include_directories(
+  /home/tarik/develop/robotics/trajopt/ext
+  /home/tarik/develop/robotics/trajopt/src
+  /home/tarik/develop/robotics/trajopt/ext/json/include
 )
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME} src/frasier_openrave.cpp src/frasier_openrave_planner.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES})
+# target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Eigen_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} /home/tarik/develop/robotics/trajopt/build/lib/libgtest.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.so /home/tarik/develop/robotics/trajopt/build/lib/libgtest.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so /home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libtrajopt.so /home/tarik/develop/robotics/trajopt/build/lib/libjson.so)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Eigen_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${trajopt_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-std=c++0x")
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Add cmake target dependencies of the library
@@ -145,9 +156,10 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(${PROJECT_NAME}_test nodes/frasier_openrave_test.cpp src/frasier_openrave.cpp src/frasier_openrave_planner.cpp)
-target_link_libraries(${PROJECT_NAME}_test ${catkin_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES})
+# target_link_libraries(${PROJECT_NAME}_test ${catkin_LIBRARIES} ${Eigen_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES} /home/tarik/develop/robotics/trajopt/build/lib/libgtest.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.so /home/tarik/develop/robotics/trajopt/build/lib/libgtest.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so /home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libtrajopt.so /home/tarik/develop/robotics/trajopt/build/lib/libjson.so)
+target_link_libraries(${PROJECT_NAME}_test ${catkin_LIBRARIES} ${Eigen_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
 set_target_properties(${PROJECT_NAME}_test PROPERTIES COMPILE_FLAGS "-std=c++0x")
-add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
