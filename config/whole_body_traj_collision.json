@@ -1,0 +1,37 @@
+{
+  "basic_info" : {
+    "n_steps" : 10,
+    "manip" : "whole_body",
+    "start_fixed" : true
+  },
+  "costs" : [
+  {
+    "name" : "disc_coll",
+    "type" : "collision",
+    "params" :
+    {
+      "coeffs" : [ 50 ],
+      "continuous" : false,
+      "dist_pen" : [ 0.040 ],
+      "first_step" : 0,
+      "last_step" : 9
+    }
+    }
+  ],
+  "constraints" : [
+  {
+    "type" : "pose",
+    "params" : {
+      "xyz" : [1.5, 0.8, 0.9],
+      "wxyz": [0.0, 0.707, 0.0, 0.707],
+      "link": "hand_palm_link",
+      "timestep" : 9
+                }
+
+  }
+  ],
+
+  "init_info" : {
+      "type" : "stationary"
+  }
+}

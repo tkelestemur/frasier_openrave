@@ -12,15 +12,17 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   roslib
+	actionlib
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Eigen REQUIRED COMPONENTS)
 find_package(OpenRAVE REQUIRED)
-# find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 set(OpenRAVE_BOTH_LIBRARIES ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
 set(trajopt_LIBRARIES /home/tarik/develop/robotics/trajopt/build/lib/libjson.so /home/tarik/develop/robotics/trajopt/build/lib/libtrajopt.so
-/home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so /home/tarik/develop/robotics/trajopt/build/lib/libosgviewer.so)
+/home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so
+/home/tarik/develop/robotics/trajopt/build/lib/libosgviewer.so)
 message(STATUS "dir='${trajopt_SOURCE_DIR}'")
 
 
@@ -116,6 +118,10 @@ catkin_package(
  # DEPENDS Eigen
 )
 
+if(NOT EIGEN3_INCLUDE_DIRS)
+  set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
+endif()
+
 ###########
 ## Build ##
 ###########
@@ -127,7 +133,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 	SYSTEM
   ${OpenRAVE_INCLUDE_DIRS}
-	${Eigen_INCLUDE_DIRS}
+	${EIGEN3_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  ${OSG_INCLUDE_DIRS}
 )
 
 include_directories(
@@ -137,9 +145,12 @@ include_directories(
 )
 
 ## Declare a C++ library
+add_library(frasier_controller src/frasier_controller.cpp)
+target_link_libraries(frasier_controller ${catkin_LIBRARIES})
+set_target_properties(frasier_controller PROPERTIES COMPILE_FLAGS "-std=c++0x")
+
 add_library(${PROJECT_NAME} src/frasier_openrave.cpp src/frasier_openrave_planner.cpp)
-# target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Eigen_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} /home/tarik/develop/robotics/trajopt/build/lib/libgtest.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.so /home/tarik/develop/robotics/trajopt/build/lib/libgtest.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so /home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libtrajopt.so /home/tarik/develop/robotics/trajopt/build/lib/libjson.so)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Eigen_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${trajopt_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${trajopt_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-std=c++0x")
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Add cmake target dependencies of the library
@@ -155,9 +166,8 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES COMPILE_FLAGS "-std=c++0x")
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(${PROJECT_NAME}_test nodes/frasier_openrave_test.cpp src/frasier_openrave.cpp src/frasier_openrave_planner.cpp)
-# target_link_libraries(${PROJECT_NAME}_test ${catkin_LIBRARIES} ${Eigen_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES} /home/tarik/develop/robotics/trajopt/build/lib/libgtest.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.a /home/tarik/develop/robotics/trajopt/build/lib/libgtest_main.so /home/tarik/develop/robotics/trajopt/build/lib/libgtest.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so /home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libtrajopt.so /home/tarik/develop/robotics/trajopt/build/lib/libjson.so)
-target_link_libraries(${PROJECT_NAME}_test ${catkin_LIBRARIES} ${Eigen_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
+add_executable(${PROJECT_NAME}_test nodes/frasier_openrave_test.cpp src/frasier_openrave.cpp src/frasier_openrave_planner.cpp src/frasier_controller.cpp)
+target_link_libraries(${PROJECT_NAME}_test ${catkin_LIBRARIES} ${Boost_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
 set_target_properties(${PROJECT_NAME}_test PROPERTIES COMPILE_FLAGS "-std=c++0x")
 # add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Rename C++ executable without prefix

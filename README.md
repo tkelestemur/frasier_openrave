@@ -5,5 +5,9 @@
 - [x] fix viewer (change to osg viewer)
 - [ ] redundant ik solver from openrave
 - [ ] point cloud updater using ROS
-- [ ] IK using trajopt
-- [ ] planning using trajopt
+- [x] IK using trajopt
+- [x] planning using trajopt
+
+
+### Installation
+TrajOpt: `cmake .. -DGUROBI_LIBRARY=/opt/gurobi752/linux64/lib/libgurobi75.so`

@@ -3,16 +3,11 @@
   <camrotationaxis>-0.946522 -0.231893 0.224324 122.297980</camrotationaxis> -->
 
 
-  <Robot file="../models/hsrb_whole_body.dae" name="hsrb">
+  <Robot file="../models/hsrb_or_arm_base.dae" name="hsrb">
     <translation>-0.0 0.0 0.01</translation>
 
     <Manipulator name="whole_body">
       <base>base_footprint</base>
-      <effector>hand_palm_link</effector>
-    </Manipulator>
-
-    <Manipulator name="arm">
-      <base>arm_lift_link</base>
       <effector>hand_palm_link</effector>
     </Manipulator>
 

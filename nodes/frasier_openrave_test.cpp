@@ -1,23 +1,42 @@
 #include <frasier_openrave/frasier_openrave.h>
+#include <frasier_openrave/frasier_controller.h>
 
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "frasier_openrave_test");// ros init
-    ros::NodeHandle nh; // Create a node handle and start the node
+    ros::init(argc, argv, "frasier_openrave_test");
+    ros::NodeHandle nh; //
 
-    FRASIEROpenRAVE frasier_or(nh);
+    FRASIEROpenRAVE rave(nh);
+    FRASIERController controller(nh);
+    rave.LoadHSR();
 
-      frasier_or.LoadHSR();
+    rave.startThreads();
+    ros::Duration(1.0).sleep();
+    // controller.moveToStartState();
+    // ros::Duration(2.0).sleep();
 
-      frasier_or.startThreads();
-      ros::Duration(2.0).sleep();
-      // frasier_or.initPlanner();
+    // Test trajectory optimization
+    Eigen::MatrixXd traj;
+    rave.computeTrajectory(traj);
+    std::cout << "TRAJECTORY:  " << std::endl << traj << std::endl;
+    ros::Duration(2.0).sleep();
+    rave.playTrajectory(traj);
+    // controller.sendWholeBodyTraj(traj);
 
-      // std::vector<double> q = {0.5, 0, 0, 0, 0, 0, 0, 0};
+    // Test IK solver
+    // Eigen::VectorXd q_sol;
+    // frasier_or.computeIK(q_sol);
+    // std::cout << "IK SOLUTION:  " << std::endl << q_sol << std::endl;
 
-      frasier_or.computeTrajectory();
-      frasier_or.startROSSpinner();
+    // Test RRT planner
+    // rave.initRRTPlanner();
+    // std::vector<double> q;
+    // q = {1.0, 0.5, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0};
+    // rave.planToConf(q);
 
+    rave.startROSSpinner();
+
+    //
 
     return 0;
 }

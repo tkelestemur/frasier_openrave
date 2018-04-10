@@ -11,11 +11,10 @@
   }
   ],
   "constraints" : [
-
   {
     "type" : "pose",
-    "params" : {"xyz" : [2.0, 0.5, 0.8],
-                "wxyz": [0.0, 0.707, 0.0, 0.707],
+    "params" : {"xyz" : [0.5, -0.3, 0.8],
+                "wxyz": [0.5, 0.5, -0.5, 0.5],
                 "link": "hand_palm_link",
                 "timestep" : 9
                 }

@@ -1,0 +1,32 @@
+{
+  "basic_info" : {
+    "n_steps" : 1,
+    "manip" : "whole_body",
+    "start_fixed" : false
+  },
+  "costs" : [
+  {
+    "type" : "pose",
+    "params": {
+      "xyz" : [2.0, 0.5, 0.8],
+      "wxyz": [0.966, 0.0, 0.0, 0.259],
+      "link" : "hand_palm_link",
+      "pos_coeffs" : [10, 10, 10],
+      "rot_coeffs" : [10, 10, 10]
+    }
+  },
+  {
+    "name" : "disc_coll",
+    "type" : "collision",
+    "params" :
+    {
+      "coeffs" : [ 20 ],
+      "continuous" : false,
+      "dist_pen" : [ 1.50 ]
+    }
+    }
+  ],
+  "init_info" : {
+    "type" : "stationary"
+  }
+}
