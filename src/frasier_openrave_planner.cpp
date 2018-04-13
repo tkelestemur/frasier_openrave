@@ -58,77 +58,33 @@ void FRASIEROpenRAVE::planToConf(std::vector<double>& q){
     std::cout << traj_0[i] << '\n';
   }
 
-  // hsr_->GetController()->SetPath(traj);d
-
 
 }
 
-void FRASIEROpenRAVE::computeIK(Eigen::VectorXd&  q_sol){
-  std::string json_path;
-  json_path = config_path_ + "whole_body_ik.json";
+void FRASIEROpenRAVE::computeIK(Eigen::Affine3d& eef_pose, Eigen::VectorXd&  q_sol, bool check_coll){
 
-  Json::Value whole_body_ik_json;
-  Json::Reader reader;
-  std::ifstream i(json_path);
+  Json::Value opt_j = createJsonValueIK(eef_pose, check_coll);
 
-  if (!reader.parse(i, whole_body_ik_json, false)) {
-    std::cout << "can't read json!"  << std::endl;
-    return;
-  }
+  updatePlanningEnv();
 
-  trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(whole_body_ik_json, env_);
-
+  trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env_);
   trajopt::TrajOptResultPtr traj_result = trajopt::OptimizeProblem(traj_prob, false);
-  std::cout << "traj : " << std::endl << traj_result->traj << std::endl;
 
   q_sol = traj_result->traj.row(0);
 
 }
 
-void FRASIEROpenRAVE::computeTrajectory(Eigen::MatrixXd& traj){ //TODO: Should I set active dofs???
-
-  std::string json_path;
-  json_path = config_path_ + "table_shelf.json";
-
-  Json::Value whole_body_traj_json;
-  Json::Reader reader;
-  std::ifstream i(json_path);
-
-  if (!reader.parse(i, whole_body_traj_json, true)) {
-    std::cout << "can't read json!"  << std::endl;
-    std::cout << reader.getFormatedErrorMessages() << std::endl;
-    return;
-  }
+void FRASIEROpenRAVE::computeTrajectory(Eigen::MatrixXd& traj, EEFPoseGoals eef_goals){ //TODO: Should I set active dofs???
 
 
-    updatePlanningEnv();
+  Json::Value opt_j = createJsonValueTraj(10, eef_goals);
 
-    manip_ = hsr_->GetManipulator("whole_body");
-    hsr_->SetActiveDOFs(manip_->GetArmIndices());
+  updatePlanningEnv();
 
+  trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env_);
+  trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, true);
 
-    trajopt::ProblemConstructionInfo pci(planning_env_);
-    pci.fromJson(whole_body_traj_json);
-    // pci.basic_info.start_fixed = true;
-    // pci.basic_info.n_steps = 10;
-    // pci.basic_info.manip = "whole_body";
-    //
-    // pci.init_info.type = trajopt::InitInfo::STATIONARY;
-    //
-    // trajopt::TermInfo pose_cost;
-
-    trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(pci);
-
-    trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, false);
-
-    traj = result->traj;
-
-    OpenRAVE::TrajectoryBasePtr or_traj = OpenRAVE::RaveCreateTrajectory(env_);
-    std::vector<double> traj_0;
-    traj_0 = trajopt::trajToDblVec(traj.row(0));
-
-    // or_traj->Insert(1, traj_0, true);
-
+  traj = result->traj;
 
 }
 
@@ -140,4 +96,86 @@ void FRASIEROpenRAVE::playTrajectory(Eigen::MatrixXd& traj){
     hsr_->SetDOFValues(trajopt::trajToDblVec(traj.row(i)), 1, q_index);
     ros::Duration(0.5).sleep();
   }
+}
+
+Json::Value FRASIEROpenRAVE::createJsonValueTraj(int n_steps, EEFPoseGoals eef_goals){
+  json opt_j, disc_coll_j, joint_vel_j, basic_info_j, init_info_j;
+
+  std::vector<json> eef_pose_j;
+  eef_pose_j.resize(eef_goals.n_goals);
+
+  int first_step = 0; int last_step = n_steps-1;
+
+  std::vector<double> joint_vel_coeffs(8, 1.0);
+  std::vector<int> disc_coll_coeffs(n_steps, 50);
+  std::vector<double> disc_coll_pen(n_steps, 0.040);
+
+  basic_info_j = { {"n_steps", n_steps}, {"manip", "whole_body"}, {"start_fixed", true} };
+
+  joint_vel_j = { {"type", "joint_vel"}, {"params", { {"coeffs", joint_vel_coeffs} } } };
+
+  disc_coll_j = { {"type", "collision"}, {"params", { {"coeffs", disc_coll_coeffs}, {"continuous", false}, {"dist_pen", disc_coll_pen}, {"first_step", first_step}, {"last_step", last_step} } } };
+
+  for (int i = 0; i < eef_goals.n_goals; i++) {
+    Eigen::Quaterniond rot(eef_goals.poses[i].linear());
+    Eigen::Vector3d pos = eef_goals.poses[i].translation();
+    eef_pose_j[i] = { {"type", "pose"}, {"params", { {"xyz", {pos(0), pos(1), pos(2)}}, {"wxyz", {rot.w(), rot.x(), rot.y(), rot.z()}}, {"link", "hand_palm_link"}, {"timestep", eef_goals.timesteps[i]}} } };
+  }
+
+  init_info_j = { {"type", "stationary"} };
+
+  opt_j["basic_info"] = basic_info_j;
+  opt_j["costs"] = {joint_vel_j, disc_coll_j};
+  opt_j["constraints"] = eef_pose_j;
+  opt_j["init_info"] = init_info_j;
+
+  std::cout << opt_j.dump(4) << std::endl;
+
+  Json::Value v;
+  Json::Reader r;
+
+  std::string opt_j_str = opt_j.dump();
+
+  if (!r.parse(opt_j_str, v, false)) {
+    std::cout << "can't read json!"  << std::endl;
+    std::cout << r.getFormatedErrorMessages() << std::endl;
+    return 0;
+  }
+
+  return v;
+}
+
+Json::Value FRASIEROpenRAVE::createJsonValueIK(Eigen::Affine3d& eef_pose, bool check_coll){
+  json opt_j, disc_coll_j, basic_info_j, init_info_j, eef_pose_j;
+
+  Eigen::Quaterniond rot(eef_pose.linear());
+  Eigen::Vector3d pos = eef_pose.translation();
+
+  std::vector<int> disc_coll_coeffs(1, 50);
+  std::vector<double> disc_coll_pen(1, 0.040);
+
+  basic_info_j = { {"n_steps", 1}, {"manip", "whole_body"}, {"start_fixed", false} };
+  disc_coll_j = { {"type", "collision"}, {"params", { {"coeffs", disc_coll_coeffs}, {"continuous", false}, {"dist_pen", disc_coll_pen} } } };
+  eef_pose_j = { {"type", "pose"}, {"params", { {"xyz", {pos(0), pos(1), pos(2)}}, {"wxyz", {rot.w(), rot.x(), rot.y(), rot.z()}}, {"link", "hand_palm_link"}} } };
+  init_info_j = { {"type", "stationary"} };
+
+  opt_j["basic_info"] = basic_info_j;
+  opt_j["costs"] = {disc_coll_j};
+  opt_j["constraints"] = {eef_pose_j};
+  opt_j["init_info"] = init_info_j;
+
+  // std::cout << opt_j.dump(4) << std::endl;
+
+  Json::Value v;
+  Json::Reader r;
+
+  std::string opt_j_str = opt_j.dump();
+  std::cout << "here" << '\n';
+  if (!r.parse(opt_j_str, v, false)) {
+    std::cout << "can't read json!"  << std::endl;
+    std::cout << r.getFormatedErrorMessages() << std::endl;
+    return 0;
+  }
+
+  return v;
 }

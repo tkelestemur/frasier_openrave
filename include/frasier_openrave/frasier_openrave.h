@@ -19,10 +19,19 @@
 #include <trajopt/problem_description.hpp>
 
 // Other
+#include <frasier_openrave/json.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
+using json = nlohmann::json;
+
+struct EEFPoseGoals{
+  std::vector<Eigen::Affine3d> poses;
+  std::vector<int> timesteps;
+  int n_goals;
+};
 
 class FRASIEROpenRAVE{
 public:
@@ -42,9 +51,11 @@ public:
 
   // Motion planning
   void initRRTPlanner();
+  Json::Value createJsonValueTraj(int n_steps, EEFPoseGoals eef_goals);
+  Json::Value createJsonValueIK(Eigen::Affine3d& eef_pose, bool check_coll=true);
   void planToConf(std::vector<double>& q);
-  void computeIK(Eigen::VectorXd&  q_sol);
-  void computeTrajectory(Eigen::MatrixXd& traj);
+  void computeIK(Eigen::Affine3d& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
+  void computeTrajectory(Eigen::MatrixXd& traj, EEFPoseGoals eef_goals);
   void playTrajectory(Eigen::MatrixXd& traj);
 
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);

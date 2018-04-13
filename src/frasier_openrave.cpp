@@ -22,8 +22,8 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n) : nh_(n){
   env_->SetDebugLevel(OpenRAVE::Level_Error);
 
   joint_state_flag_ = false;
-  run_viewer_flag_ = true;
-  run_joint_updater_flag_ = false;
+  run_viewer_flag_ = false;
+  run_joint_updater_flag_ = true;
 
 
   joint_names_ = {"base_x_joint", "base_y_joint", "base_t_joint", "arm_lift_joint", "arm_flex_joint", "arm_roll_joint",
@@ -171,6 +171,9 @@ void FRASIEROpenRAVE::updateJointStates(){
           q[q_index[12]] = joints_.position[25];
           q[q_index[13]] = joints_.position[10];
           q[q_index[14]] = joints_.position[11];
+
+          // std::cout << "hand_l_spring_proximal_joint : " << q[q_index[9]] << std::endl;
+          // std::cout << "hand_l_distal_joint : " << q[q_index[10]] << std::endl;
 
           // Set velocities TODO: Set velocities
           // q[q_index[0]] = base_.x;
