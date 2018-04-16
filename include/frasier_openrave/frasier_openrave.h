@@ -35,7 +35,7 @@ struct EEFPoseGoals{
 
 class FRASIEROpenRAVE{
 public:
-  FRASIEROpenRAVE(ros::NodeHandle n);
+  FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer=false);
   ~FRASIEROpenRAVE();
   bool LoadHSR();
 
@@ -61,13 +61,15 @@ public:
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
   void pointCloudCb(); // TODO: Anas
   void baseStateCb(const geometry_msgs::Pose2D::ConstPtr &msg);
+  sensor_msgs::JointState getWholeBodyState();
 
 
 private:
   ros::NodeHandle nh_;
   ros::Subscriber joint_state_sub_, base_state_sub_;
-  sensor_msgs::JointState joints_;
+
   geometry_msgs::Pose2D base_;
+  sensor_msgs::JointState joints_;
   std::string joint_state_topic_, base_state_topic_;
   std::string robot_name_, manip_name_, planner_name_;
   std::string package_path_, config_path_, worlds_path_;

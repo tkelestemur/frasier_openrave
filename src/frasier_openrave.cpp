@@ -1,7 +1,7 @@
 #include <frasier_openrave/frasier_openrave.h>
 
 
-FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n) : nh_(n){
+FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer) : nh_(n), run_viewer_flag_(run_viewer){
 
   // ROS
   joint_state_topic_ = "/hsrb/robot_state/joint_states";
@@ -22,7 +22,6 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n) : nh_(n){
   env_->SetDebugLevel(OpenRAVE::Level_Error);
 
   joint_state_flag_ = false;
-  run_viewer_flag_ = false;
   run_joint_updater_flag_ = true;
 
 
@@ -64,10 +63,38 @@ void FRASIEROpenRAVE::baseStateCb(const geometry_msgs::Pose2D::ConstPtr &msg){
 
 }
 
-bool FRASIEROpenRAVE::LoadHSR(){ // TODO: Check if env exi
+sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() {
+
+    sensor_msgs::JointState state;
+
+    state.name.push_back("odom_x");
+    state.name.push_back("odom_y");
+    state.name.push_back("odom_t");
+    state.name.push_back("arm_lift_joint");
+    state.name.push_back("arm_flex_joint");
+    state.name.push_back("arm_roll_joint");
+    state.name.push_back("wrist_flex_joint");
+    state.name.push_back("wrist_roll_joint");
+    state.name.push_back("base_roll_joint");
+
+
+    state.position.push_back(base_.x);
+    state.position.push_back(base_.y);
+    state.position.push_back(base_.theta);
+    state.position.push_back(joints_.position[12]);
+    state.position.push_back(joints_.position[13]);
+    state.position.push_back(joints_.position[14]);
+    state.position.push_back(joints_.position[15]);
+    state.position.push_back(joints_.position[16]);
+    state.position.push_back(joints_.position[0]); // /filter_hsrb_trajectory srv needs base_roll_joint
+
+    return state;
+}
+
+bool FRASIEROpenRAVE::LoadHSR(){ // TODO: Check if env exist
 
   std::string world_path;
-  world_path = worlds_path_ + "hsr_table_shelf.xml";
+  world_path = worlds_path_ + "hsr_empty_world.xml";
   bool success = env_->Load(world_path);
 
   planning_env_ = env_->CloneSelf(OpenRAVE::Clone_Bodies);
@@ -106,11 +133,10 @@ void FRASIEROpenRAVE::setViewer(){
   viewer_ = OpenRAVE::RaveCreateViewer(env_, viewer_name);
   BOOST_ASSERT(!!viewer_);
 
-  // attach it to the environment:
   env_->Add(viewer_);
+
   // viewer_.SetBkgndColor() TODO: Change background colour
 
-  // finally call the viewer's infinite loop (this is why a separate thread is needed)
   viewer_->main(true); //TODO: Need EnvironmentMutex ???
 
 }
@@ -154,7 +180,7 @@ void FRASIEROpenRAVE::updateJointStates(){
         {
           boost::mutex::scoped_lock lock(base_state_mutex_);
 
-          // Set positions
+          // Set positions // TODO: Fix minus theta 
           q[q_index[0]] = base_.x;
           q[q_index[1]] = base_.y;
           q[q_index[2]] = base_.theta;
@@ -172,36 +198,34 @@ void FRASIEROpenRAVE::updateJointStates(){
           q[q_index[13]] = joints_.position[10];
           q[q_index[14]] = joints_.position[11];
 
-          // std::cout << "hand_l_spring_proximal_joint : " << q[q_index[9]] << std::endl;
-          // std::cout << "hand_l_distal_joint : " << q[q_index[10]] << std::endl;
 
           // Set velocities TODO: Set velocities
           // q[q_index[0]] = base_.x;
           // q[q_index[1]] = base_.y;
           // q[q_index[2]] = base_.theta;
           //
-          // q[q_index[3]] = joints_.position[12];
-          // q[q_index[4]] = joints_.position[13];
-          // q[q_index[5]] = joints_.position[14];
-          // q[q_index[6]] = joints_.position[15];
-          // q[q_index[7]] = joints_.position[16];
-          // q[q_index[8]] = joints_.position[17];
-          // q[q_index[9]] = joints_.position[19];
-          // q[q_index[10]] = joints_.position[21];
-          // q[q_index[11]] = joints_.position[23];
-          // q[q_index[12]] = joints_.position[25];
-          // q[q_index[13]] = joints_.position[10];
-          // q[q_index[14]] = joints_.position[11];
+          q_v[q_index[3]] = joints_.velocity[12];
+          q_v[q_index[4]] = joints_.velocity[13];
+          q_v[q_index[5]] = joints_.velocity[14];
+          q_v[q_index[6]] = joints_.velocity[15];
+          q_v[q_index[7]] = joints_.velocity[16];
+          q_v[q_index[8]] = joints_.velocity[17];
+          q_v[q_index[9]] = joints_.velocity[19];
+          q_v[q_index[10]] = joints_.velocity[21];
+          q_v[q_index[11]] = joints_.velocity[23];
+          q_v[q_index[12]] = joints_.velocity[25];
+          q_v[q_index[13]] = joints_.velocity[10];
+          q_v[q_index[14]] = joints_.velocity[11];
         }
 
       }
 
 
-      // hsr_->SetActiveDOFValues(q);
-      hsr_->SetJointValues(q);
-      // hsr_->SetActiveDOFVelocities(q_v);
+       hsr_->SetActiveDOFValues(q);
+//      hsr_->SetJointValues(q);
+       hsr_->SetActiveDOFVelocities(q_v);
 
-    }else{std::cout << "Can't recieve joint state!" << '\n';}
+    }
 
     ros::spinOnce();
     r.sleep();

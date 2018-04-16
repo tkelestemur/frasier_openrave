@@ -169,6 +169,10 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 add_executable(${PROJECT_NAME}_test nodes/frasier_openrave_test.cpp src/frasier_openrave.cpp src/frasier_openrave_planner.cpp src/frasier_controller.cpp)
 target_link_libraries(${PROJECT_NAME}_test ${catkin_LIBRARIES} ${Boost_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
 set_target_properties(${PROJECT_NAME}_test PROPERTIES COMPILE_FLAGS "-std=c++0x")
+
+add_executable(controller_test nodes/frasier_controller_test.cpp src/frasier_openrave.cpp src/frasier_openrave_planner.cpp src/frasier_controller.cpp)
+target_link_libraries(controller_test ${catkin_LIBRARIES} ${Boost_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
+set_target_properties(controller_test PROPERTIES COMPILE_FLAGS "-std=c++0x")
 # add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

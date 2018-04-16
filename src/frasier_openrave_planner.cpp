@@ -82,7 +82,7 @@ void FRASIEROpenRAVE::computeTrajectory(Eigen::MatrixXd& traj, EEFPoseGoals eef_
   updatePlanningEnv();
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env_);
-  trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, true);
+  trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, false);
 
   traj = result->traj;
 
@@ -129,7 +129,6 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(int n_steps, EEFPoseGoals eef_g
   opt_j["constraints"] = eef_pose_j;
   opt_j["init_info"] = init_info_j;
 
-  std::cout << opt_j.dump(4) << std::endl;
 
   Json::Value v;
   Json::Reader r;
@@ -163,8 +162,6 @@ Json::Value FRASIEROpenRAVE::createJsonValueIK(Eigen::Affine3d& eef_pose, bool c
   opt_j["costs"] = {disc_coll_j};
   opt_j["constraints"] = {eef_pose_j};
   opt_j["init_info"] = init_info_j;
-
-  // std::cout << opt_j.dump(4) << std::endl;
 
   Json::Value v;
   Json::Reader r;

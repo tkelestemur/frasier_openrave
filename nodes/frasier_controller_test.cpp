@@ -3,29 +3,29 @@
 
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "frasier_openrave_test");
+    ros::init(argc, argv, "frasier_controller_test");
     ros::NodeHandle nh; //
 
-    FRASIEROpenRAVE rave(nh);
+    FRASIEROpenRAVE rave(nh, false);
     FRASIERController controller(nh);
     rave.LoadHSR();
 
     rave.startThreads();
-    ros::Duration(2.0).sleep();
-    controller.moveToStartState();
-    ros::Duration(2.0).sleep();
 
-    // Test trajectory optimization
+    ros::Duration(1.0).sleep();
+    controller.moveToStartState(MOVE_STATE::HOME);
+
     EEFPoseGoals eef_goals;
     eef_goals.n_goals = 2;
     eef_goals.poses.resize(2);
     eef_goals.timesteps.resize(2);
 
-    Eigen::Vector3d p(0.4, 0.0, 1.0);
+    Eigen::Vector3d p(0.8, 0.0, 0.3);
     Eigen::Quaterniond q(0.0, 0.707, 0.0, 0.707);
     Eigen::Affine3d pose_1;
     pose_1.translation() = p;
     pose_1.linear() = q.toRotationMatrix();
+
     eef_goals.poses[0] = pose_1;
     eef_goals.timesteps[0] = 5;
 
@@ -37,30 +37,15 @@ int main(int argc, char **argv) {
     eef_goals.poses[1] = pose_2;
     eef_goals.timesteps[1] = 9;
 
+
     Eigen::MatrixXd traj;
     rave.computeTrajectory(traj, eef_goals);
-    std::cout << "TRAJECTORY:  " << std::endl << traj << std::endl;
 
-    // rave.playTrajectory(traj);
-    ros::Duration(1.0).sleep();
-    controller.sendWholeBodyTraj(traj);
+    sensor_msgs::JointState start_state = rave.getWholeBodyState();
+    controller.setStartState(start_state);
+    controller.executeWholeBodyTraj(traj);
 
-    // Test IK solver
-    // Eigen::Affine3d eef_pose = Eigen::Affine3d::Identity();
-    // eef_pose.translation() = Eigen::Vector3d(1.0, 0.0, 1.1);
-    // Eigen::VectorXd q_sol;
-    // rave.computeIK(eef_pose, q_sol);
-    // std::cout << "IK SOLUTION:  " << std::endl << q_sol << std::endl;
-
-    // Test RRT planner
-    // rave.initRRTPlanner();
-    // std::vector<double> q;
-    // q = {1.0, 0.5, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0};
-    // rave.planToConf(q);
 
     rave.startROSSpinner();
-
-
-
     return 0;
 }

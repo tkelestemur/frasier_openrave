@@ -1,0 +1,10 @@
+#ifndef FRAISER_OPENRAVE_PERCEPTION_H_
+#define FRAISER_OPENRAVE_PERCEPTION_H_
+
+
+class FRASIEROpenRAVEPerception {
+
+};
+
+
+#endif
