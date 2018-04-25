@@ -10,41 +10,56 @@
 #include <controller_manager_msgs/ListControllers.h>
 #include <tmc_manipulation_msgs/FilterJointTrajectory.h>
 #include <tmc_manipulation_msgs/ArmNavigationErrorCodes.h>
+#include <tmc_control_msgs/GripperApplyEffortAction.h>
+#include <tmc_control_msgs/GripperApplyEffortGoal.h>
 
 // Other
 #include <Eigen/Core>
 
 enum MOVE_STATE{
     PICK,
-    HOME
+    HOME,
+    TABLE,
+    SHELF
+};
+
+enum GRIPPER_STATE{
+    GRASP,
+    RELEASE
 };
 
 class FRASIERController{
-
-
 
 public:
   FRASIERController(ros::NodeHandle n);
   // ~FRASIERController();
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
-  void sendWholeBodyTraj(Eigen::MatrixXd& traj);
-  void moveToStartState(MOVE_STATE state);
-  bool filterTrajectory(Eigen::MatrixXd& traj,
-                        trajectory_msgs::JointTrajectory& whole_body_traj);
+
+  void moveToKnownState(MOVE_STATE state);
+  void moveHeadToKnownState(MOVE_STATE state);
+
+  bool filterTrajectory(trajectory_msgs::JointTrajectory& traj,
+                        trajectory_msgs::JointTrajectory& traj_filtered);
+
   void extractArmBaseTraj(trajectory_msgs::JointTrajectory whole_body_traj,
                            trajectory_msgs::JointTrajectory& base_traj,
                            trajectory_msgs::JointTrajectory& arm_traj);
-  void executeWholeBodyTraj(Eigen::MatrixXd& traj);
-  void executeWholeBodyTraj(trajectory_msgs::JointTrajectory whole_body_traj);
+
+  void executeWholeBodyTraj(trajectory_msgs::JointTrajectory traj);
+//  void sendWholeBodyTraj(Eigen::MatrixXd& traj);
+
+  void graspOrRelease(GRIPPER_STATE state);
+
   void setStartState(sensor_msgs::JointState& start_state);
 
 private:
   ros::NodeHandle nh_;
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> arm_cli_;
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> base_cli_;
+  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> head_cli_;
+  actionlib::SimpleActionClient<tmc_control_msgs::GripperApplyEffortAction> gripper_cli;
 
   ros::ServiceClient filter_traj_srv_;
-  ros::Subscriber joint_state_sub_;
   sensor_msgs::JointState start_state_;
 
   bool joint_state_flag_;

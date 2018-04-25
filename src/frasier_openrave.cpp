@@ -23,7 +23,9 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer) : nh_(n), r
 
   joint_state_flag_ = false;
   run_joint_updater_flag_ = true;
+  plan_plotter_ = false;
 
+  base_link_ = "base_link";
 
   joint_names_ = {"base_x_joint", "base_y_joint", "base_t_joint", "arm_lift_joint", "arm_flex_joint", "arm_roll_joint",
                   "wrist_flex_joint", "wrist_roll_joint", "hand_motor_joint", "hand_l_spring_proximal_joint",
@@ -61,9 +63,10 @@ void FRASIEROpenRAVE::baseStateCb(const geometry_msgs::Pose2D::ConstPtr &msg){
   boost::mutex::scoped_lock lock(base_state_mutex_);
   base_ = *msg;
 
+
 }
 
-sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() {
+sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() { //TODO: Try without base_roll_joint
 
     sensor_msgs::JointState state;
 
@@ -105,8 +108,6 @@ bool FRASIEROpenRAVE::LoadHSR(){ // TODO: Check if env exist
   // Get manipulator
   manip_ = hsr_->GetManipulator("whole_body");
 
-  // Get controller
-  // controller_ = OpenRAVE::RaveCreateController(env_, "")
 
   if (success) {
     std::cout << "HSR Initialized!" << std::endl;
@@ -122,6 +123,7 @@ void FRASIEROpenRAVE::updatePlanningEnv() {
   hsr_->GetActiveDOFValues(q);
 
   planning_env_->GetRobot(robot_name_)->SetJointValues(q);
+
 }
 
 
@@ -139,6 +141,7 @@ void FRASIEROpenRAVE::setViewer(){
 
   viewer_->main(true); //TODO: Need EnvironmentMutex ???
 
+
 }
 
 
@@ -155,7 +158,9 @@ void FRASIEROpenRAVE::getWholeBodyJointIndex(std::vector<int>& q_index){
   }
 }
 
-
+OpenRAVE::Transform FRASIEROpenRAVE::getRobotTransform() {
+  return hsr_->GetLink(base_link_)->GetTransform();
+}
 
 void FRASIEROpenRAVE::updateJointStates(){
 
@@ -184,6 +189,11 @@ void FRASIEROpenRAVE::updateJointStates(){
           q[q_index[0]] = base_.x;
           q[q_index[1]] = base_.y;
           q[q_index[2]] = base_.theta;
+//          OpenRAVE::Vector base_quat = OpenRAVE::geometry::quatFromAxisAngle(OpenRAVE::Vector(0,0,1), base_.theta);
+//          OpenRAVE::Vector base_trans = OpenRAVE::Vector(base_.x, base_.y, 0.0);
+//          OpenRAVE::Transform hsr_pose(base_quat, base_trans);
+//          hsr_->SetTransform(OpenRAVE::Transform(base_quat, base_trans));
+
 
           q[q_index[3]] = joints_.position[12];
           q[q_index[4]] = joints_.position[13];
@@ -245,14 +255,14 @@ void FRASIEROpenRAVE::startThreads(/* arguments */) {
   }
 
 }
-
-void FRASIEROpenRAVE::startROSSpinner(){
-    ros::Rate r(100);
-    while(ros::ok())
-    {
-        ros::spinOnce();
-        r.sleep();
-    }
-    ros::Duration(1.0).sleep();
-    ROS_INFO("Shutdown");
-}
+//
+//void FRASIEROpenRAVE::startROSSpinner(){
+//    ros::Rate r(100);
+//    while(ros::ok())
+//    {
+//        ros::spinOnce();
+//        r.sleep();
+//    }
+//    ros::Duration(1.0).sleep();
+//    ROS_INFO("Shutdown");
+//}

@@ -6,6 +6,7 @@
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose2D.h>
+#include <trajectory_msgs/JointTrajectory.h>
 
 // OpenRAVE
 #include <openrave-0.9/openrave-core.h>
@@ -24,13 +25,21 @@
 #include <boost/bind.hpp>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <Eigen/Dense>
 
 using json = nlohmann::json;
 
+//typedef OpenRAVE OR
+
 struct EEFPoseGoals{
-  std::vector<Eigen::Affine3d> poses;
-  std::vector<int> timesteps;
   int n_goals;
+  std::vector<OpenRAVE::Transform> poses;
+  std::vector<int> timesteps;
+  bool wrt_world;
+  EEFPoseGoals(int n) : n_goals(n){
+    poses.resize(n_goals);
+    timesteps.resize(n_goals);
+  }
 };
 
 class FRASIEROpenRAVE{
@@ -39,44 +48,59 @@ public:
   ~FRASIEROpenRAVE();
   bool LoadHSR();
 
+  // Threads
   void setViewer();
   void updateJointStates();
   void updateCollisionEnv(); //TODO: Anas
   void updatePlanningEnv();
   void getActiveJointIndex(std::vector<int>& q_index);
   void getWholeBodyJointIndex(std::vector<int>& q_index);
-
+  OpenRAVE::Transform getRobotTransform();
   void startThreads();
-  void startROSSpinner();
+//  void startROSSpinner();
 
   // Motion planning
-  void initRRTPlanner();
-  Json::Value createJsonValueTraj(int n_steps, EEFPoseGoals eef_goals);
-  Json::Value createJsonValueIK(Eigen::Affine3d& eef_pose, bool check_coll=true);
-  void planToConf(std::vector<double>& q);
-  void computeIK(Eigen::Affine3d& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
-  void computeTrajectory(Eigen::MatrixXd& traj, EEFPoseGoals eef_goals);
-  void playTrajectory(Eigen::MatrixXd& traj);
+  void planRRT(std::vector<double>& q);
+  Json::Value createJsonValueTraj(EEFPoseGoals& eef_goals, int n_steps);
+  Json::Value createJsonValueTraj(std::vector<double>& q, int n_steps);
+  Json::Value createJsonValueIK(OpenRAVE::Transform& eef_pose, bool check_coll=true);
 
+  trajectory_msgs::JointTrajectory computeTrajectory(EEFPoseGoals& eef_goals);
+  trajectory_msgs::JointTrajectory computeTrajectory(std::vector<double>& q);
+  void computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
+
+  void playTrajectory(Eigen::MatrixXd& traj);
+  trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
+
+  // Grasping
+  std::vector<OpenRAVE::Transform> getGraspPoses();
+  std::vector<OpenRAVE::Transform> getPlacePoses();
+
+
+  // ROS
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
   void pointCloudCb(); // TODO: Anas
   void baseStateCb(const geometry_msgs::Pose2D::ConstPtr &msg);
   sensor_msgs::JointState getWholeBodyState();
 
+  // Perception
+  void addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name);
+//  void addCylinderCollObj(Eigen::Vector2d& size, Eigen::Vector3d& pos, std::string& obj_name);
+  void removeCollisionObj(std::string& obj_name);
 
 private:
   ros::NodeHandle nh_;
   ros::Subscriber joint_state_sub_, base_state_sub_;
-
   geometry_msgs::Pose2D base_;
   sensor_msgs::JointState joints_;
-  std::string joint_state_topic_, base_state_topic_;
+
+  std::string joint_state_topic_, base_state_topic_, base_link_;
   std::string robot_name_, manip_name_, planner_name_;
   std::string package_path_, config_path_, worlds_path_;
   std::vector<std::string> joint_names_, base_names_, whole_body_joint_names_;
 
   bool joint_state_flag_, run_viewer_flag_, run_joint_updater_flag_;
-
+  bool plan_plotter_;
   OpenRAVE::EnvironmentBasePtr env_, planning_env_;
   OpenRAVE::ViewerBasePtr viewer_;
   OpenRAVE::RobotBasePtr hsr_;

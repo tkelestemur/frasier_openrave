@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
     rave.startThreads();
 
     ros::Duration(1.0).sleep();
-    controller.moveToStartState(MOVE_STATE::HOME);
+    controller.moveToKnownState(MOVE_STATE::HOME);
 
     EEFPoseGoals eef_goals;
     eef_goals.n_goals = 2;
@@ -38,12 +38,11 @@ int main(int argc, char **argv) {
     eef_goals.timesteps[1] = 9;
 
 
-    Eigen::MatrixXd traj;
-    rave.computeTrajectory(traj, eef_goals);
+    trajectory_msgs::JointTrajectory traj = rave.computeTrajectory(eef_goals);
 
-    sensor_msgs::JointState start_state = rave.getWholeBodyState();
-    controller.setStartState(start_state);
-    controller.executeWholeBodyTraj(traj);
+//    sensor_msgs::JointState start_state = rave.getWholeBodyState();
+//    controller.setStartState(start_state);
+//    controller.executeWholeBodyTraj(traj);
 
 
     rave.startROSSpinner();

@@ -1,19 +1,15 @@
 #include <frasier_openrave/frasier_openrave.h>
-#include <frasier_openrave/frasier_controller.h>
-
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "frasier_openrave_test");
+    ros::init(argc, argv, "frasier_planner_test");
     ros::NodeHandle nh; //
 
     FRASIEROpenRAVE rave(nh);
-    FRASIERController controller(nh);
+
     rave.LoadHSR();
 
     rave.startThreads();
-    ros::Duration(2.0).sleep();
-    controller.moveToStartState();
-    ros::Duration(2.0).sleep();
+    ros::Duration(1.0).sleep();
 
     // Test trajectory optimization
     EEFPoseGoals eef_goals;
@@ -36,14 +32,11 @@ int main(int argc, char **argv) {
     pose_2.linear() = q_2.toRotationMatrix();
     eef_goals.poses[1] = pose_2;
     eef_goals.timesteps[1] = 9;
-
-    Eigen::MatrixXd traj;
-    rave.computeTrajectory(traj, eef_goals);
-    std::cout << "TRAJECTORY:  " << std::endl << traj << std::endl;
+    std::cout << "here" << std::endl;
+    trajectory_msgs::JointTrajectory traj = rave.computeTrajectory(eef_goals);
+//    std::cout << "TRAJECTORY:  " << std::endl << traj << std::endl;
 
     // rave.playTrajectory(traj);
-    ros::Duration(1.0).sleep();
-    controller.sendWholeBodyTraj(traj);
 
     // Test IK solver
     // Eigen::Affine3d eef_pose = Eigen::Affine3d::Identity();

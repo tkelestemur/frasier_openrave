@@ -4,8 +4,9 @@
 
 
   <Robot file="../models/hsrb_openrave.dae" name="hsrb">
-    <translation>-0.0 0.0 0.01</translation>
-
+    <translation>0.0 0.0 0.0</translation>
+    <!--<quat>-1 0 0 0</quat>-->
+      <!--<rotation>0.0 0.0 0.01</rotation>-->
     <Manipulator name="whole_body">
       <base>base_footprint</base>
       <effector>hand_palm_link</effector>
@@ -18,7 +19,7 @@
     <Body type="static">
       <Translation>0 0 0</Translation>
       <Geom type="box">
-        <extents>10 10 0.002</extents>
+        <extents>10 10 0.001</extents>
         <translation>0 0 -0.005</translation>
         <diffuseColor>.6 .6 .6</diffuseColor>
       	<ambientColor>0.6 0.6 0.6</ambientColor>
