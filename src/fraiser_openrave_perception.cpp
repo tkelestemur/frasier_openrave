@@ -7,8 +7,6 @@ void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform&
     OpenRAVE::KinBodyPtr obj_body = OpenRAVE::RaveCreateKinBody(env_);
     obj_body->SetName(obj_name);
 
-    //TODO: Get object's rotation from perception
-    OpenRAVE::Transform obj_pose(OpenRAVE::Vector(1,0,0,0), pose.trans);
     OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
 
     OpenRAVE::KinBody::GeometryInfo body;
@@ -22,11 +20,9 @@ void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform&
 
     obj_body->InitFromGeometries(geoms);
 
-    obj_body->SetTransform(hsr_pose * obj_pose);
-
+    obj_body->SetTransform(hsr_pose * pose);
 
     env_->Add(obj_body);
-
 
 }
 

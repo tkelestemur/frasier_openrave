@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
 
     FRASIEROpenRAVE rave(nh);
 
-    rave.LoadHSR();
+    rave.loadHSR();
 
     rave.startThreads();
     ros::Duration(1.0).sleep();
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     pose_2.linear() = q_2.toRotationMatrix();
     eef_goals.poses[1] = pose_2;
     eef_goals.timesteps[1] = 9;
-    std::cout << "here" << std::endl;
+
     trajectory_msgs::JointTrajectory traj = rave.computeTrajectory(eef_goals);
 //    std::cout << "TRAJECTORY:  " << std::endl << traj << std::endl;
 
@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     // q = {1.0, 0.5, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0};
     // rave.planToConf(q);
 
-    rave.startROSSpinner();
+
 
 
 

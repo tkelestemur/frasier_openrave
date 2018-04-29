@@ -33,6 +33,7 @@ using json = nlohmann::json;
 
 struct EEFPoseGoals{
   int n_goals;
+  int no_waypoints;
   std::vector<OpenRAVE::Transform> poses;
   std::vector<int> timesteps;
   bool wrt_world;
@@ -42,13 +43,18 @@ struct EEFPoseGoals{
   }
 };
 
+struct Grasp {
+    std::string obj_name;
+    OpenRAVE::Transform pose;
+};
+
 class FRASIEROpenRAVE{
 public:
   FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer=false);
   ~FRASIEROpenRAVE();
-  bool LoadHSR();
+  bool loadHSR();
 
-  // Threads
+  // General
   void setViewer();
   void updateJointStates();
   void updateCollisionEnv(); //TODO: Anas
@@ -57,25 +63,29 @@ public:
   void getWholeBodyJointIndex(std::vector<int>& q_index);
   OpenRAVE::Transform getRobotTransform();
   void startThreads();
-//  void startROSSpinner();
+
 
   // Motion planning
   void planRRT(std::vector<double>& q);
-  Json::Value createJsonValueTraj(EEFPoseGoals& eef_goals, int n_steps);
+  Json::Value createJsonValueTraj(EEFPoseGoals& eef_goals);
   Json::Value createJsonValueTraj(std::vector<double>& q, int n_steps);
   Json::Value createJsonValueIK(OpenRAVE::Transform& eef_pose, bool check_coll=true);
-
   trajectory_msgs::JointTrajectory computeTrajectory(EEFPoseGoals& eef_goals);
   trajectory_msgs::JointTrajectory computeTrajectory(std::vector<double>& q);
   void computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
+  void grabObject(std::string& obj_name);
+  void releaseObject(std::string& obj_name);
 
+  //  Utilities
   void playTrajectory(Eigen::MatrixXd& traj);
+  void drawTransform(OpenRAVE::Transform& T);
   trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
 
-  // Grasping
-  std::vector<OpenRAVE::Transform> getGraspPoses();
-  std::vector<OpenRAVE::Transform> getPlacePoses();
 
+  // Grasping
+  std::vector<OpenRAVE::Transform> generatePlacePoses();
+  Grasp generateGraspPose();
+  OpenRAVE::Transform generateGraspPose(std::string& obj_name);
 
   // ROS
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);

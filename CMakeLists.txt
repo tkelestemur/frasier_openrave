@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   roslib
   actionlib
+  ecl_manipulators
 )
 
 ## System dependencies are found with CMake's conventions
@@ -78,8 +79,8 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${O
 #set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-std=c++0x")
 #add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(frasier_controller src/frasier_controller.cpp)
-target_link_libraries(frasier_controller ${catkin_LIBRARIES})
+add_library(${PROJECT_NAME}_controller src/frasier_openrave_controller.cpp)
+target_link_libraries(${PROJECT_NAME}_controller ${catkin_LIBRARIES})
 #set_target_properties(frasier_controller PROPERTIES COMPILE_FLAGS "-std=c++0x")
 
 ### EXECUTABLES ###

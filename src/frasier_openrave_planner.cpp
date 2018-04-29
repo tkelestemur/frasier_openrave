@@ -1,6 +1,6 @@
 #include <frasier_openrave/frasier_openrave.h>
 
-
+////////////////////////////// RRT //////////////////////////////
 //void FRASIEROpenRAVE::planToConf(std::vector<double>& q){
 //
 //  planner_ = OpenRAVE::RaveCreatePlanner(env_, "birrt");
@@ -79,7 +79,7 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals
 
   OpenRAVE::EnvironmentBasePtr planning_env = env_->CloneSelf(OpenRAVE::Clone_Bodies);
 
-  Json::Value opt_j = createJsonValueTraj(eef_goals, 10);
+  Json::Value opt_j = createJsonValueTraj(eef_goals);
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
   trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plan_plotter_);
@@ -105,7 +105,7 @@ void FRASIEROpenRAVE::computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd& 
 
 }
 
-Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals, int n_steps){
+Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
   json opt_j, disc_coll_j, cont_coll_j, joint_vel_j, basic_info_j, init_info_j;
 
   OpenRAVE::Transform hsr_pose = hsr_->GetLink("base_link")->GetTransform();
@@ -113,6 +113,7 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals, int n_
   std::vector<json> eef_pose_j;
   eef_pose_j.resize(eef_goals.n_goals);
 
+  int n_steps = eef_goals.no_waypoints;
   int first_step = 0; int last_step = n_steps-1;
 
   std::vector<double> joint_vel_coeffs(8, 1.0);
@@ -151,8 +152,6 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals, int n_
     else{
       eef_goal = hsr_pose * eef_pose_goal; // trasform from robot fixed frame to world frame
     }
-
-    std::cout  << "eef goal : " << eef_pose_goal.trans << " " << eef_pose_goal.rot << std::endl;
 
 
     eef_pose_j[i] = { {"type", "pose"},
@@ -268,7 +267,7 @@ Json::Value FRASIEROpenRAVE::createJsonValueIK(OpenRAVE::Transform& eef_pose, bo
   Json::Reader r;
 
   std::string opt_j_str = opt_j.dump();
-  std::cout << "here" << '\n';
+
   if (!r.parse(opt_j_str, v, false)) {
     std::cout << "can't read json!"  << std::endl;
     std::cout << r.getFormatedErrorMessages() << std::endl;
@@ -276,6 +275,16 @@ Json::Value FRASIEROpenRAVE::createJsonValueIK(OpenRAVE::Transform& eef_pose, bo
   }
 
   return v;
+}
+
+void FRASIEROpenRAVE::grabObject(std::string& obj_name) {
+  OpenRAVE::KinBodyPtr grabbed_object = env_->GetKinBody(obj_name);
+  hsr_->Grab(grabbed_object);
+}
+
+void FRASIEROpenRAVE::releaseObject(std::string& obj_name) {
+  OpenRAVE::KinBodyPtr released_object = env_->GetKinBody(obj_name);
+  hsr_->Release(released_object);
 }
 
 ////////////////////////////// UTILITIES //////////////////////////////
@@ -307,6 +316,19 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::Matri
   return traj_ros;
 }
 
+void FRASIEROpenRAVE::drawTransform(OpenRAVE::Transform &T) {
+  OpenRAVE::TransformMatrix M;
+  OpenRAVE::geometry::matrixFromQuat(M, T.rot);
+  double arrow_length = 0.1;
+  float arrow_width = 0.1;
+  OpenRAVE::Vector origin(T.trans);
+  OpenRAVE::Vector x_axis(M.rot(0, 0), M.rot(1, 0), M.rot(2, 0));
+//  std::cout << "origin: " << origin << std::endl;
+//  std::cout << "vector: " << arrow_length*origin+x_axis << std::endl;
+  OpenRAVE::GraphHandlePtr arrow_x = env_->drawarrow(origin, arrow_length*origin+x_axis, arrow_width, OpenRAVE::Vector(1, 0, 0));
+  arrow_x->SetShow(true);
+}
+
 void FRASIEROpenRAVE::playTrajectory(Eigen::MatrixXd& traj){
   std::vector<int> q_index;
   getWholeBodyJointIndex(q_index);
@@ -318,12 +340,10 @@ void FRASIEROpenRAVE::playTrajectory(Eigen::MatrixXd& traj){
 }
 
 ////////////////////////////// GRASPING //////////////////////////////
-std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::getGraspPoses(){
+Grasp FRASIEROpenRAVE::generateGraspPose(){
   OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
 
-  std::vector<OpenRAVE::Transform> grasp_poses;
-  grasp_poses.resize(1);
-
+  Grasp grasp;
   std::vector <OpenRAVE::KinBodyPtr> bodies;
   env_->GetBodies(bodies);
   double closest_distance = std::numeric_limits<double>::max();
@@ -331,29 +351,41 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::getGraspPoses(){
    std::string body_name = bodies[i]->GetName();
 
    if (body_name.substr(0,3) == "obj"){
-     std::cout << "creating a grasp pose for " << body_name << std::endl;
+     std::cout << "RAVE: creating a grasp pose for " << body_name << std::endl;
 
-     OpenRAVE::Transform grasp_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
+     OpenRAVE::Transform obj_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
 
-     double distance = std::sqrt(std::pow(grasp_pose.trans.x, 2) + std::pow(grasp_pose.trans.y, 2));
+     double distance = std::sqrt(std::pow(obj_pose.trans.x, 2) + std::pow(obj_pose.trans.y, 2));
      if (distance < closest_distance){
-       grasp_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
-       grasp_pose.trans.x = grasp_pose.trans.x - 0.03;
 
-       grasp_poses[0] = grasp_pose;
+       obj_pose.rot = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
+       obj_pose.trans.y = obj_pose.trans.y - 0.03;
+
+       grasp.pose = obj_pose;
+       grasp.obj_name = body_name;
        closest_distance = distance;
 
      }
-
-
    }
 
   }
 
-  return grasp_poses;
+  return grasp;
 }
 
-std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::getPlacePoses(){
+
+OpenRAVE::Transform FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
+  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
+  OpenRAVE::KinBodyPtr object = env_->GetKinBody(obj_name);
+
+  OpenRAVE::Transform grasp_pose = hsr_pose.inverse() * object->GetTransform();
+  grasp_pose.rot = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
+  grasp_pose.trans.y = grasp_pose.trans.y - 0.03;
+
+  return grasp_pose;
+}
+
+std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
   OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
 
   std::vector<OpenRAVE::Transform> place_poses;
@@ -364,7 +396,7 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::getPlacePoses(){
     std::string body_name = bodies[i]->GetName();
 
     if (body_name.substr(0,5) == "shelf"){
-      std::cout << "creating a place pose for " << body_name << std::endl;
+      std::cout << "RAVE: creating a place pose for " << body_name << std::endl;
 
       OpenRAVE::Transform place_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
 
@@ -372,7 +404,7 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::getPlacePoses(){
       place_pose.trans.z = place_pose.trans.z + 0.12;
 
       place_poses.push_back(place_pose);
-      
+
     }
 
   }

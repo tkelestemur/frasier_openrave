@@ -5,46 +5,31 @@
 int main(int argc, char **argv) {
     ros::init(argc, argv, "frasier_controller_test");
     ros::NodeHandle nh; //
-
-    FRASIEROpenRAVE rave(nh, false);
+    ros::AsyncSpinner spinner(4);
+    FRASIEROpenRAVE rave(nh, true);
     FRASIERController controller(nh);
-    rave.LoadHSR();
 
+    spinner.start();
+    rave.loadHSR();
     rave.startThreads();
-
     ros::Duration(1.0).sleep();
+
+
     controller.moveToKnownState(MOVE_STATE::HOME);
 
-    EEFPoseGoals eef_goals;
-    eef_goals.n_goals = 2;
-    eef_goals.poses.resize(2);
-    eef_goals.timesteps.resize(2);
+    EEFPoseGoals eef_grasp_goal(1);
+    eef_grasp_goal.wrt_world = false;
+    eef_grasp_goal.no_waypoints = 5;
+    eef_grasp_goal.timesteps[0] = 4;
+    eef_grasp_goal.poses[0] = OpenRAVE::Transform(OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707), OpenRAVE::Vector(1.0, 0.0, 1.0));
 
-    Eigen::Vector3d p(0.8, 0.0, 0.3);
-    Eigen::Quaterniond q(0.0, 0.707, 0.0, 0.707);
-    Eigen::Affine3d pose_1;
-    pose_1.translation() = p;
-    pose_1.linear() = q.toRotationMatrix();
-
-    eef_goals.poses[0] = pose_1;
-    eef_goals.timesteps[0] = 5;
-
-    Eigen::Vector3d p_2(1.2, -0.5, 1.1);
-    Eigen::Quaterniond q_2(0.0, 0.707, 0.0, 0.707);
-    Eigen::Affine3d pose_2;
-    pose_2.translation() = p_2;
-    pose_2.linear() = q_2.toRotationMatrix();
-    eef_goals.poses[1] = pose_2;
-    eef_goals.timesteps[1] = 9;
-
-
-    trajectory_msgs::JointTrajectory traj = rave.computeTrajectory(eef_goals);
-
-//    sensor_msgs::JointState start_state = rave.getWholeBodyState();
-//    controller.setStartState(start_state);
+    trajectory_msgs::JointTrajectory traj = rave.computeTrajectory(eef_grasp_goal);
 //    controller.executeWholeBodyTraj(traj);
+    trajectory_msgs::JointTrajectory smoothed_traj;
+    controller.smoothTrajectory(traj, smoothed_traj);
 
 
-    rave.startROSSpinner();
+
+    ros::waitForShutdown();
     return 0;
 }

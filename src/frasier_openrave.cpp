@@ -94,13 +94,13 @@ sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() { //TODO: Try witho
     return state;
 }
 
-bool FRASIEROpenRAVE::LoadHSR(){ // TODO: Check if env exist
+bool FRASIEROpenRAVE::loadHSR() { // TODO: Check if env exist
 
   std::string world_path;
   world_path = worlds_path_ + "hsr_empty_world.xml";
   bool success = env_->Load(world_path);
 
-  planning_env_ = env_->CloneSelf(OpenRAVE::Clone_Bodies);
+//  planning_env_ = env_->CloneSelf(OpenRAVE::Clone_Bodies);
 
   // Get robot
   hsr_ = env_->GetRobot(robot_name_);
@@ -110,7 +110,7 @@ bool FRASIEROpenRAVE::LoadHSR(){ // TODO: Check if env exist
 
 
   if (success) {
-    std::cout << "HSR Initialized!" << std::endl;
+    std::cout << "RAVE: HSR Initialized!" << std::endl;
   }
 
 
@@ -174,7 +174,7 @@ void FRASIEROpenRAVE::updateJointStates(){
   hsr_->GetActiveDOFVelocities(q_v);
   getActiveJointIndex(q_index);
 
-  std::cout << "Started updating joints!" << '\n';
+  std::cout << "RAVE: started updating joints!" << '\n';
 
   while (ros::ok()) {
 
@@ -189,10 +189,6 @@ void FRASIEROpenRAVE::updateJointStates(){
           q[q_index[0]] = base_.x;
           q[q_index[1]] = base_.y;
           q[q_index[2]] = base_.theta;
-//          OpenRAVE::Vector base_quat = OpenRAVE::geometry::quatFromAxisAngle(OpenRAVE::Vector(0,0,1), base_.theta);
-//          OpenRAVE::Vector base_trans = OpenRAVE::Vector(base_.x, base_.y, 0.0);
-//          OpenRAVE::Transform hsr_pose(base_quat, base_trans);
-//          hsr_->SetTransform(OpenRAVE::Transform(base_quat, base_trans));
 
 
           q[q_index[3]] = joints_.position[12];
@@ -237,14 +233,14 @@ void FRASIEROpenRAVE::updateJointStates(){
 
     }
 
-    ros::spinOnce();
+//    ros::spinOnce();
     r.sleep();
   }
 
 }
 
 void FRASIEROpenRAVE::startThreads(/* arguments */) {
-  std::cout << "Starting threads..." << std::endl;
+  std::cout << "RAVE: starting threads..." << std::endl;
 
   if (run_joint_updater_flag_) {
     joint_state_thread_ = boost::thread(&FRASIEROpenRAVE::updateJointStates, this);
@@ -255,14 +251,3 @@ void FRASIEROpenRAVE::startThreads(/* arguments */) {
   }
 
 }
-//
-//void FRASIEROpenRAVE::startROSSpinner(){
-//    ros::Rate r(100);
-//    while(ros::ok())
-//    {
-//        ros::spinOnce();
-//        r.sleep();
-//    }
-//    ros::Duration(1.0).sleep();
-//    ROS_INFO("Shutdown");
-//}
