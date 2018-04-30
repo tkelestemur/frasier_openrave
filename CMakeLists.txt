@@ -39,7 +39,7 @@ set(trajopt_LIBRARIES /home/tarik/develop/robotics/trajopt/build/lib/libjson.so 
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES frasier_openrave frasier_controller
+ LIBRARIES frasier_openrave frasier_openrave_controller
  CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs
  # DEPENDS Eigen
 )
