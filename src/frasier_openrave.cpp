@@ -1,7 +1,9 @@
 #include <frasier_openrave/frasier_openrave.h>
 
 
-FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer) : nh_(n), run_viewer_flag_(run_viewer){
+FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_robot) : nh_(n),
+                                                                                        run_viewer_flag_(run_viewer),
+                                                                                        run_joint_updater_flag_(real_robot){
 
   // ROS
   joint_state_topic_ = "/hsrb/robot_state/joint_states";
@@ -22,7 +24,6 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer) : nh_(n), r
   env_->SetDebugLevel(OpenRAVE::Level_Error);
 
   joint_state_flag_ = false;
-  run_joint_updater_flag_ = true;
   plan_plotter_ = false;
 
   base_link_ = "base_link";
@@ -110,12 +111,30 @@ bool FRASIEROpenRAVE::loadHSR() { // TODO: Check if env exist
 
 
   if (success) {
-    std::cout << "RAVE: HSR Initialized!" << std::endl;
+    std::cout << "RAVE: HSR initialized!" << std::endl;
   }
 
 
 
   return success;
+}
+
+bool FRASIEROpenRAVE::loadCustomEnv() {
+  std::string world_path;
+  world_path = worlds_path_ + "hsr_table_shelf.xml";
+  bool success = env_->Load(world_path);
+
+  hsr_ = env_->GetRobot(robot_name_);
+
+  // Get manipulator
+  manip_ = hsr_->GetManipulator("whole_body");
+
+
+  if (success) {
+    std::cout << "RAVE: custom world initialized!" << std::endl;
+  }
+
+
 }
 
 void FRASIEROpenRAVE::updatePlanningEnv() {

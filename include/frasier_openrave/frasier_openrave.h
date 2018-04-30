@@ -7,6 +7,9 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose2D.h>
 #include <trajectory_msgs/JointTrajectory.h>
+#include <ecl/exceptions/standard_exception.hpp>
+#include <ecl/manipulators.hpp>
+#include <ecl/exceptions.hpp>
 
 // OpenRAVE
 #include <openrave-0.9/openrave-core.h>
@@ -50,11 +53,13 @@ struct Grasp {
 
 class FRASIEROpenRAVE{
 public:
-  FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer=false);
+  FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer=false, bool real_robot=false);
   ~FRASIEROpenRAVE();
-  bool loadHSR();
+
 
   // General
+  bool loadHSR();
+  bool loadCustomEnv();
   void setViewer();
   void updateJointStates();
   void updateCollisionEnv(); //TODO: Anas
@@ -70,11 +75,13 @@ public:
   Json::Value createJsonValueTraj(EEFPoseGoals& eef_goals);
   Json::Value createJsonValueTraj(std::vector<double>& q, int n_steps);
   Json::Value createJsonValueIK(OpenRAVE::Transform& eef_pose, bool check_coll=true);
-  trajectory_msgs::JointTrajectory computeTrajectory(EEFPoseGoals& eef_goals);
-  trajectory_msgs::JointTrajectory computeTrajectory(std::vector<double>& q);
+  trajectory_msgs::JointTrajectory computeTrajectory(EEFPoseGoals& eef_goals, bool plot=false);
+  trajectory_msgs::JointTrajectory computeTrajectory(std::vector<double>& q, bool plot=false);
   void computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
   void grabObject(std::string& obj_name);
   void releaseObject(std::string& obj_name);
+  void smoothTrajectory(trajectory_msgs::JointTrajectory& traj,
+                        trajectory_msgs::JointTrajectory& traj_smoothed);
 
   //  Utilities
   void playTrajectory(Eigen::MatrixXd& traj);

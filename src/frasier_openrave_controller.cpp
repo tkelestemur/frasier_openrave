@@ -5,109 +5,50 @@ FRASIERController::FRASIERController(ros::NodeHandle n) : nh_(n),
                     arm_cli_("/hsrb/arm_trajectory_controller/follow_joint_trajectory", true),
                     base_cli_("/hsrb/omni_base_controller/follow_joint_trajectory", true),
                     head_cli_("/hsrb/head_trajectory_controller/follow_joint_trajectory", true),
-                    gripper_cli("/hsrb/gripper_controller/grasp", true){
+                    gripper_cli_("/hsrb/gripper_controller/grasp", true){
 
   arm_cli_.waitForServer(ros::Duration(3.0));
   base_cli_.waitForServer(ros::Duration(3.0));
   head_cli_.waitForServer(ros::Duration(3.0));
-  gripper_cli.waitForServer(ros::Duration(3.0));
+  gripper_cli_.waitForServer(ros::Duration(3.0));
 
-  filter_traj_srv_ = nh_.serviceClient<tmc_manipulation_msgs::FilterJointTrajectory>("/filter_hsrb_trajectory");
+//  filter_traj_srv_ = nh_.serviceClient<tmc_manipulation_msgs::FilterJointTrajectory>("/filter_hsrb_trajectory");
   std::cout << "CONTROL: controller is initialized!" << std::endl;
 
 }
 
 
-bool FRASIERController::filterTrajectory(trajectory_msgs::JointTrajectory& traj,
-                                         trajectory_msgs::JointTrajectory& traj_filtered){
-
-
-  tmc_manipulation_msgs::FilterJointTrajectoryRequest filter_req;
-  tmc_manipulation_msgs::FilterJointTrajectoryResponse filter_res;
-
-  sensor_msgs::JointState start_state;
-  start_state.name.resize(traj.joint_names.size());
-
-  filter_req.trajectory = traj;
-  filter_req.allowed_time = ros::Duration(30.0);
-  filter_req.start_state.joint_state = start_state_;
-
-  std::cout << "calling the filter service..." << std::endl;
-
-  bool result = filter_traj_srv_.call(filter_req, filter_res);
-
-  if (filter_res.error_code.val != tmc_manipulation_msgs::ArmNavigationErrorCodes::SUCCESS) {
-      std::cout << "cannot filter the trajectory, error code: " << filter_res.error_code.val << std::endl;
-      return false;
-  }else{
-    std::cout << "trajecory filtering is successfull!" << std::endl;
-
-    traj_filtered = filter_res.trajectory;
-
-    return true;
-  }
-
-
-}
-
-void FRASIERController::smoothTrajectory(trajectory_msgs::JointTrajectory &traj,
-                                         trajectory_msgs::JointTrajectory &traj_smoothed) {
-
-  int no_dof = 8;
-  int no_waypoints = traj.points.size();
-  ecl::Trajectory<ecl::JointAngles> ecl_traj(no_dof);
-  ecl::WayPoint<ecl::JointAngles> waypoint(no_dof);
-  ecl::Array<double> acc_limits(no_dof);
-
-  acc_limits << 0.3, 0.3, 0.5, 0.15, 1.0, 1.0, 1.0, 1.0;
-
-  for (int i = 0; i < no_waypoints; i++) {
-
-    ecl::Array<double> q(no_dof);
-
-    for (int j = 0; j < no_dof; j++) {
-      q[j] = traj.points[i].positions[j];
-    }
-    waypoint.angles() = q;
-    waypoint.nominalRates(1.0);
-    ecl_traj.append(waypoint);
-  }
-
-  std::cout << "CONTROL: started smoothing the trajectory..." << std::endl;
-  ecl_traj.maxAccelerations() = acc_limits;
-  try {
-    ecl_traj.tensionSplineInterpolation(4.0);
-  }
-  catch (ecl::StandardException &e){
-    std::cout << e.what() << std::endl;
-  }
-
-
-  std::cout << "CONTROL: smoothing is done! total duration : " << ecl_traj.duration() << std::endl;
-  int N = 100;
-  traj_smoothed.header.stamp = ros::Time::now();
-  traj_smoothed.joint_names.resize(traj.joint_names.size());
-  traj_smoothed.joint_names = traj.joint_names;
-  traj_smoothed.points.resize(N);
-
-  for (int k = 0; k <N; k++) {
-
-    double t = k*(ecl_traj.duration())/N;
-
-    traj_smoothed.points[k].positions.resize(no_dof);
-    traj_smoothed.points[k].velocities.resize(no_dof);
-    traj_smoothed.points[k].accelerations.resize(no_dof);
-    traj_smoothed.points[k].time_from_start = ros::Duration(t);
-    for (int x = 0; x < no_dof ; x++) {
-
-      traj_smoothed.points[k].positions[x] = ecl_traj(x, t);
-      traj_smoothed.points[k].velocities[x] = ecl_traj.derivative(x, t);
-      traj_smoothed.points[k].accelerations[x] = ecl_traj.dderivative(x, t);
-
-    }
-  }
-
-}
+//bool FRASIERController::filterTrajectory(trajectory_msgs::JointTrajectory& traj,
+//                                         trajectory_msgs::JointTrajectory& traj_filtered){
+//
+//
+//  tmc_manipulation_msgs::FilterJointTrajectoryRequest filter_req;
+//  tmc_manipulation_msgs::FilterJointTrajectoryResponse filter_res;
+//
+//  sensor_msgs::JointState start_state;
+//  start_state.name.resize(traj.joint_names.size());
+//
+//  filter_req.trajectory = traj;
+//  filter_req.allowed_time = ros::Duration(30.0);
+//  filter_req.start_state.joint_state = start_state_;
+//
+//  std::cout << "calling the filter service..." << std::endl;
+//
+//  bool result = filter_traj_srv_.call(filter_req, filter_res);
+//
+//  if (filter_res.error_code.val != tmc_manipulation_msgs::ArmNavigationErrorCodes::SUCCESS) {
+//      std::cout << "cannot filter the trajectory, error code: " << filter_res.error_code.val << std::endl;
+//      return false;
+//  }else{
+//    std::cout << "trajecory filtering is successfull!" << std::endl;
+//
+//    traj_filtered = filter_res.trajectory;
+//
+//    return true;
+//  }
+//
+//
+//}
 
 void FRASIERController::extractArmBaseTraj(trajectory_msgs::JointTrajectory whole_body_traj,
                                            trajectory_msgs::JointTrajectory& base_traj,
@@ -148,12 +89,11 @@ void FRASIERController::extractArmBaseTraj(trajectory_msgs::JointTrajectory whol
 
 void FRASIERController::executeWholeBodyTraj(trajectory_msgs::JointTrajectory traj) {
       trajectory_msgs::JointTrajectory traj_filtered;
-//    if (filterTrajectory(traj, traj_filtered)){
 
-      smoothTrajectory(traj, traj_filtered);
+//      smoothTrajectory(traj, traj_filtered);
       control_msgs::FollowJointTrajectoryGoal base_goal, arm_goal;
       trajectory_msgs::JointTrajectory base_traj, arm_traj;
-      extractArmBaseTraj(traj_filtered, base_traj, arm_traj);
+      extractArmBaseTraj(traj, base_traj, arm_traj);
 
       arm_goal.trajectory = arm_traj;
       base_goal.trajectory = base_traj;
@@ -162,7 +102,7 @@ void FRASIERController::executeWholeBodyTraj(trajectory_msgs::JointTrajectory tr
       base_cli_.sendGoal(base_goal);
       arm_cli_.waitForResult(ros::Duration(30.0));
       base_cli_.waitForResult(ros::Duration(30.0));
-//}
+
 }
 
 
@@ -289,26 +229,10 @@ void FRASIERController::graspOrRelease(GRIPPER_STATE state) {
   }
 
 
-  gripper_cli.sendGoalAndWait(goal, ros::Duration(2.0));
+  gripper_cli_.sendGoalAndWait(goal, ros::Duration(2.0));
 //  gripper_cli.waitForResult(ros::Duration(1.0));
 }
 
-void FRASIERController::saveTrajectory(trajectory_msgs::JointTrajectory traj, std::string& file_path) {
-
-  std::ofstream traj_file;
-  traj_file.open(file_path);
-  int N = traj.points.size();
-  for (int i = 0; i < N ; i++) {
-    traj_file << traj.points[i].time_from_start << "," << traj.points[i].positions[0] << ","
-              << traj.points[i].positions[1] << "," << traj.points[i].positions[2] << ","
-              << traj.points[i].positions[3] << "," << traj.points[i].positions[4] << ","
-              << traj.points[i].positions[5] << "," << traj.points[i].positions[6] << ","
-              << traj.points[i].positions[1] << std::endl;
-  }
-
-  traj_file.close();
-
-}
 
 //void FRASIERController::setStartState(sensor_msgs::JointState &start_state) {
 //    start_state_ = start_state;

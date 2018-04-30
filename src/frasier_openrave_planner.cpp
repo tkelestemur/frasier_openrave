@@ -59,14 +59,14 @@
 //}
 
 ////////////////////////////// TRAJOPT //////////////////////////////
-trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(std::vector<double>& q){
-
+trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(std::vector<double>& q, bool plot){
+  std::cout << "RAVE: planning trajectory..." << std::endl;
   OpenRAVE::EnvironmentBasePtr planning_env = env_->CloneSelf(OpenRAVE::Clone_Bodies);
 
   Json::Value opt_j = createJsonValueTraj(q, 10);
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
-  trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plan_plotter_);
+  trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plot);
 
   planning_env->Destroy();
   Eigen::MatrixXd traj = result->traj;
@@ -75,14 +75,14 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(std::vector<
 
 }
 //TODO: Should I set active dofs???
-trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals& eef_goals){
-
+trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals& eef_goals, bool plot){
+  std::cout << "RAVE: planning trajectory..." << std::endl;
   OpenRAVE::EnvironmentBasePtr planning_env = env_->CloneSelf(OpenRAVE::Clone_Bodies);
 
   Json::Value opt_j = createJsonValueTraj(eef_goals);
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
-  trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plan_plotter_);
+  trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plot);
 
   planning_env->Destroy();
   Eigen::MatrixXd traj = result->traj;
@@ -93,7 +93,7 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals
 
 // TODO: create planning env and destroy it insetad of updating planning_env_
 void FRASIEROpenRAVE::computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd&  q_sol, bool check_coll){
-
+  std::cout << "RAVE: computing IK..." << std::endl;
   Json::Value opt_j = createJsonValueIK(eef_pose, check_coll);
 
   updatePlanningEnv();
@@ -277,6 +277,68 @@ Json::Value FRASIEROpenRAVE::createJsonValueIK(OpenRAVE::Transform& eef_pose, bo
   return v;
 }
 
+void FRASIEROpenRAVE::smoothTrajectory(trajectory_msgs::JointTrajectory &traj,
+                                         trajectory_msgs::JointTrajectory &traj_smoothed) {
+
+  int no_dof = 8;
+  int no_waypoints = traj.points.size();
+  ecl::Trajectory<ecl::JointAngles> ecl_traj(no_dof);
+  ecl::WayPoint<ecl::JointAngles> waypoint(no_dof);
+  ecl::Array<double> acc_limits(no_dof);
+
+  acc_limits << 0.3, 0.3, 0.5, 0.15, 1.0, 1.0, 1.0, 1.0;
+
+  for (int i = 0; i < no_waypoints; i++) {
+
+    ecl::Array<double> q(no_dof);
+
+    for (int j = 0; j < no_dof; j++) {
+      q[j] = traj.points[i].positions[j];
+    }
+    waypoint.angles() = q;
+    waypoint.nominalRates(1.0);
+    ecl_traj.append(waypoint);
+  }
+
+  std::cout << "RAVE: started smoothing the trajectory..." << std::endl;
+  ecl_traj.maxAccelerations() = acc_limits;
+  try {
+    ecl_traj.tensionSplineInterpolation(4.0);
+  }
+  catch (ecl::StandardException &e){
+    std::cout << e.what() << std::endl;
+  }
+
+
+  std::cout << "RAVE: smoothing is done! total duration : " << ecl_traj.duration() << std::endl;
+  int N = 100;
+  traj_smoothed.header.stamp = ros::Time::now();
+  traj_smoothed.joint_names.resize(traj.joint_names.size());
+  traj_smoothed.joint_names = traj.joint_names;
+  traj_smoothed.points.resize(N);
+
+  for (int k = 0; k <N; k++) {
+
+    double t = k*(ecl_traj.duration())/N;
+
+    traj_smoothed.points[k].positions.resize(no_dof);
+    traj_smoothed.points[k].velocities.resize(no_dof);
+    traj_smoothed.points[k].accelerations.resize(no_dof);
+    traj_smoothed.points[k].time_from_start = ros::Duration(t);
+    for (int x = 0; x < no_dof ; x++) {
+
+      traj_smoothed.points[k].positions[x] = ecl_traj(x, t);
+      traj_smoothed.points[k].velocities[x] = ecl_traj.derivative(x, t);
+      traj_smoothed.points[k].accelerations[x] = ecl_traj.dderivative(x, t);
+
+    }
+  }
+
+}
+
+
+
+
 void FRASIEROpenRAVE::grabObject(std::string& obj_name) {
   OpenRAVE::KinBodyPtr grabbed_object = env_->GetKinBody(obj_name);
   hsr_->Grab(grabbed_object);
@@ -306,9 +368,13 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::Matri
 
   for (int i = 0; i < traj.rows(); i++) {
     traj_ros.points[i].positions.resize(8);
+    traj_ros.points[i].velocities.resize(8);
+    traj_ros.points[i].accelerations.resize(8);
 
     for (int j = 0; j < 8; j++) {
       traj_ros.points[i].positions[j] = traj(i, j);
+      traj_ros.points[i].velocities[j] = 0.0;
+      traj_ros.points[i].accelerations[j] = 0.0;
 
     }
   }
