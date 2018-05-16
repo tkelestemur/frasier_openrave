@@ -32,18 +32,23 @@
 
 using json = nlohmann::json;
 
-//typedef OpenRAVE OR
-
 struct EEFPoseGoals{
   int n_goals;
   int no_waypoints;
   std::vector<OpenRAVE::Transform> poses;
   std::vector<int> timesteps;
+  double aperture;
   bool wrt_world;
   EEFPoseGoals(int n) : n_goals(n){
     poses.resize(n_goals);
     timesteps.resize(n_goals);
   }
+};
+
+struct JointPosGoals{
+    int no_waypoints;
+    std::vector<double> q;
+    std::vector<int> timesteps;
 };
 
 struct Grasp {
@@ -59,7 +64,7 @@ public:
 
   // General
   bool loadHSR();
-  bool loadCustomEnv();
+  bool loadCustomEnv(std::string& world_path);
   void setViewer();
   void updateJointStates();
   void updateCollisionEnv(); //TODO: Anas
@@ -73,10 +78,11 @@ public:
   // Motion planning
   void planRRT(std::vector<double>& q);
   Json::Value createJsonValueTraj(EEFPoseGoals& eef_goals);
-  Json::Value createJsonValueTraj(std::vector<double>& q, int n_steps);
+  Json::Value createJsonValueTraj(JointPosGoals& joint_goals);
   Json::Value createJsonValueIK(OpenRAVE::Transform& eef_pose, bool check_coll=true);
   trajectory_msgs::JointTrajectory computeTrajectory(EEFPoseGoals& eef_goals, bool plot=false);
-  trajectory_msgs::JointTrajectory computeTrajectory(std::vector<double>& q, bool plot=false);
+  trajectory_msgs::JointTrajectory computeOnTheFlyTraj(EEFPoseGoals& eef_goals, bool plot=false);
+  trajectory_msgs::JointTrajectory computeTrajectory(JointPosGoals& joint_goals, bool plot=false);
   void computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
   void grabObject(std::string& obj_name);
   void releaseObject(std::string& obj_name);
@@ -84,7 +90,7 @@ public:
                         trajectory_msgs::JointTrajectory& traj_smoothed);
 
   //  Utilities
-  void playTrajectory(Eigen::MatrixXd& traj);
+  void playTrajectory(trajectory_msgs::JointTrajectory& traj);
   void drawTransform(OpenRAVE::Transform& T);
   trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
 
@@ -93,6 +99,7 @@ public:
   std::vector<OpenRAVE::Transform> generatePlacePoses();
   Grasp generateGraspPose();
   OpenRAVE::Transform generateGraspPose(std::string& obj_name);
+  OpenRAVE::Transform generatePlacePose(std::string& obj_name);
 
   // ROS
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);

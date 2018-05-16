@@ -119,9 +119,9 @@ bool FRASIEROpenRAVE::loadHSR() { // TODO: Check if env exist
   return success;
 }
 
-bool FRASIEROpenRAVE::loadCustomEnv() {
-  std::string world_path;
-  world_path = worlds_path_ + "hsr_table_shelf.xml";
+bool FRASIEROpenRAVE::loadCustomEnv(std::string& world_path) {
+//  std::string world_path;
+//  world_path = worlds_path_ + "onthefly_grasping.xml";
   bool success = env_->Load(world_path);
 
   hsr_ = env_->GetRobot(robot_name_);
@@ -258,7 +258,7 @@ void FRASIEROpenRAVE::updateJointStates(){
 
 }
 
-void FRASIEROpenRAVE::startThreads(/* arguments */) {
+void FRASIEROpenRAVE::startThreads(/* arguments */) { // TODO: Fix threading
   std::cout << "RAVE: starting threads..." << std::endl;
 
   if (run_joint_updater_flag_) {

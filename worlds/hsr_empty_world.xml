@@ -12,6 +12,11 @@
       <effector>hand_palm_link</effector>
     </Manipulator>
 
+    <Manipulator name="whole_body_gripper">
+      <base>base_footprint</base>
+      <effector>hand_motor_dummy_link</effector>
+  </Manipulator>
+
   </Robot>
 
 

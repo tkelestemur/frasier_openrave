@@ -5,50 +5,21 @@ FRASIERController::FRASIERController(ros::NodeHandle n) : nh_(n),
                     arm_cli_("/hsrb/arm_trajectory_controller/follow_joint_trajectory", true),
                     base_cli_("/hsrb/omni_base_controller/follow_joint_trajectory", true),
                     head_cli_("/hsrb/head_trajectory_controller/follow_joint_trajectory", true),
+                    whole_body_cli_("/hsrb/impedance_control/follow_joint_trajectory", true),
+                    gripper_pos_cli_("/hsrb/gripper_controller/follow_joint_trajectory", true),
                     gripper_cli_("/hsrb/gripper_controller/grasp", true){
 
   arm_cli_.waitForServer(ros::Duration(3.0));
   base_cli_.waitForServer(ros::Duration(3.0));
   head_cli_.waitForServer(ros::Duration(3.0));
   gripper_cli_.waitForServer(ros::Duration(3.0));
+  whole_body_cli_.waitForServer(ros::Duration(3.0));
 
-//  filter_traj_srv_ = nh_.serviceClient<tmc_manipulation_msgs::FilterJointTrajectory>("/filter_hsrb_trajectory");
+
   std::cout << "CONTROL: controller is initialized!" << std::endl;
 
 }
 
-
-//bool FRASIERController::filterTrajectory(trajectory_msgs::JointTrajectory& traj,
-//                                         trajectory_msgs::JointTrajectory& traj_filtered){
-//
-//
-//  tmc_manipulation_msgs::FilterJointTrajectoryRequest filter_req;
-//  tmc_manipulation_msgs::FilterJointTrajectoryResponse filter_res;
-//
-//  sensor_msgs::JointState start_state;
-//  start_state.name.resize(traj.joint_names.size());
-//
-//  filter_req.trajectory = traj;
-//  filter_req.allowed_time = ros::Duration(30.0);
-//  filter_req.start_state.joint_state = start_state_;
-//
-//  std::cout << "calling the filter service..." << std::endl;
-//
-//  bool result = filter_traj_srv_.call(filter_req, filter_res);
-//
-//  if (filter_res.error_code.val != tmc_manipulation_msgs::ArmNavigationErrorCodes::SUCCESS) {
-//      std::cout << "cannot filter the trajectory, error code: " << filter_res.error_code.val << std::endl;
-//      return false;
-//  }else{
-//    std::cout << "trajecory filtering is successfull!" << std::endl;
-//
-//    traj_filtered = filter_res.trajectory;
-//
-//    return true;
-//  }
-//
-//
-//}
 
 void FRASIERController::extractArmBaseTraj(trajectory_msgs::JointTrajectory whole_body_traj,
                                            trajectory_msgs::JointTrajectory& base_traj,
@@ -87,25 +58,50 @@ void FRASIERController::extractArmBaseTraj(trajectory_msgs::JointTrajectory whol
 }
 
 
-void FRASIERController::executeWholeBodyTraj(trajectory_msgs::JointTrajectory traj) {
-      trajectory_msgs::JointTrajectory traj_filtered;
+void FRASIERController::executeArmBaseTraj(trajectory_msgs::JointTrajectory& traj) {
+    std::cout << "CONTROL: executing whole body trajectory..." << std::endl;
 
-//      smoothTrajectory(traj, traj_filtered);
-      control_msgs::FollowJointTrajectoryGoal base_goal, arm_goal;
-      trajectory_msgs::JointTrajectory base_traj, arm_traj;
-      extractArmBaseTraj(traj, base_traj, arm_traj);
+    control_msgs::FollowJointTrajectoryGoal base_goal, arm_goal;
+    trajectory_msgs::JointTrajectory base_traj, arm_traj;
+    extractArmBaseTraj(traj, base_traj, arm_traj);
 
-      arm_goal.trajectory = arm_traj;
-      base_goal.trajectory = base_traj;
+    arm_goal.trajectory = arm_traj;
+    base_goal.trajectory = base_traj;
 
-      arm_cli_.sendGoal(arm_goal);
-      base_cli_.sendGoal(base_goal);
-      arm_cli_.waitForResult(ros::Duration(30.0));
-      base_cli_.waitForResult(ros::Duration(30.0));
+    arm_cli_.sendGoal(arm_goal);
+    base_cli_.sendGoal(base_goal);
+    arm_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+    base_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
 
 }
 
+void FRASIERController::executeWholeBodyTraj(trajectory_msgs::JointTrajectory& traj, bool execute_gripper) {
 
+  std::cout << "CONTROL: executing whole body impedance trajectory..." << std::endl;
+  control_msgs::FollowJointTrajectoryGoal whole_body_goal, gripper_goal;
+
+  whole_body_goal.trajectory = traj;
+
+  gripper_goal.trajectory.joint_names.push_back("hand_motor_joint");
+  gripper_goal.trajectory.points.resize(traj.points.size());
+
+  for (int i = 0; i < traj.points.size(); i++) {
+    gripper_goal.trajectory.points[i].positions.push_back(traj.points[i].positions[8]);
+    gripper_goal.trajectory.points[i].velocities.push_back(traj.points[i].velocities[8]);
+    gripper_goal.trajectory.points[i].time_from_start = traj.points[i].time_from_start;
+  }
+
+  if(execute_gripper){
+    gripper_pos_cli_.sendGoal(gripper_goal);
+    whole_body_cli_.sendGoal(whole_body_goal);
+    whole_body_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+    gripper_pos_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+  }else{
+    whole_body_cli_.sendGoal(whole_body_goal);
+    whole_body_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+  }
+
+}
 
 
 void FRASIERController::moveToKnownState(MOVE_STATE state){
@@ -185,8 +181,8 @@ void FRASIERController::moveToKnownState(MOVE_STATE state){
 
   base_cli_.sendGoal(base_goal);
   arm_cli_.sendGoal(arm_goal);
-  base_cli_.waitForResult(ros::Duration(30.0));
-  arm_cli_.waitForResult(ros::Duration(30.0));
+  base_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+  arm_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
 
 
 }
@@ -215,7 +211,7 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
 
   goal.trajectory.points[0].time_from_start = ros::Duration(1.0);
 
-  head_cli_.sendGoalAndWait(goal, ros::Duration(30));
+  head_cli_.sendGoalAndWait(goal, ros::Duration(CONTROLLER_TIMEOUT));
 }
 
 void FRASIERController::graspOrRelease(GRIPPER_STATE state) {
@@ -231,6 +227,27 @@ void FRASIERController::graspOrRelease(GRIPPER_STATE state) {
 
   gripper_cli_.sendGoalAndWait(goal, ros::Duration(2.0));
 //  gripper_cli.waitForResult(ros::Duration(1.0));
+}
+
+void FRASIERController::executeGraspTraj(trajectory_msgs::JointTrajectory &traj) {
+  control_msgs::FollowJointTrajectoryGoal goal;
+
+  goal.trajectory.joint_names.push_back("hand_motor_joint");
+
+  goal.trajectory.points.resize(traj.points.size());
+
+  for (int i = 0; i < traj.points.size(); i++) {
+    goal.trajectory.points[i].positions.push_back(traj.points[i].positions[8]);
+//    goal.trajectory.points[i].velocities.push_back(traj.points[i].velocities[8]);
+    goal.trajectory.points[i].effort.push_back(-0.3);
+    goal.trajectory.points[i].time_from_start = traj.points[i].time_from_start;
+  }
+
+
+  gripper_pos_cli_.sendGoal(goal);
+  gripper_pos_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+
+
 }
 
 

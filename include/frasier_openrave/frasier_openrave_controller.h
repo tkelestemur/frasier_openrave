@@ -57,9 +57,13 @@ public:
                            trajectory_msgs::JointTrajectory& base_traj,
                            trajectory_msgs::JointTrajectory& arm_traj);
 
-  void executeWholeBodyTraj(trajectory_msgs::JointTrajectory traj);
+  void executeArmBaseTraj(trajectory_msgs::JointTrajectory& traj);
+  void executeWholeBodyTraj(trajectory_msgs::JointTrajectory& traj,
+                            bool execute_gripper=false);
+  void executeGraspTraj(trajectory_msgs::JointTrajectory& traj);
 
   void graspOrRelease(GRIPPER_STATE state);
+
 
 
 //  void setStartState(sensor_msgs::JointState& start_state);
@@ -69,7 +73,10 @@ private:
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> arm_cli_;
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> base_cli_;
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> head_cli_;
+  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> whole_body_cli_;
+  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> gripper_pos_cli_;
   actionlib::SimpleActionClient<tmc_control_msgs::GripperApplyEffortAction> gripper_cli_;
+
 
   ros::ServiceClient filter_traj_srv_;
   sensor_msgs::JointState start_state_;
@@ -77,7 +84,7 @@ private:
   bool joint_state_flag_;
 
   boost::mutex joint_state_mutex_;
-
+  const double CONTROLLER_TIMEOUT = 20.0;
 };
 
 

@@ -48,22 +48,15 @@
 //      RAVELOG_WARN("Found plan\n");
 //  }
 //  std::cout << "traj time " << traj->GetDuration()<< std::endl;
-//
-//  std::vector<double> traj_0;
-//  traj->Sample(traj_0, 0.1);
-//  for (size_t i = 0; i < traj_0.size(); i++) {
-//    std::cout << traj_0[i] << '\n';
-//  }
-//
-//
+
 //}
 
 ////////////////////////////// TRAJOPT //////////////////////////////
-trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(std::vector<double>& q, bool plot){
+trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(JointPosGoals& joint_goals, bool plot){
   std::cout << "RAVE: planning trajectory..." << std::endl;
   OpenRAVE::EnvironmentBasePtr planning_env = env_->CloneSelf(OpenRAVE::Clone_Bodies);
 
-  Json::Value opt_j = createJsonValueTraj(q, 10);
+  Json::Value opt_j = createJsonValueTraj(joint_goals);
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
   trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plot);
@@ -94,29 +87,34 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals
 // TODO: create planning env and destroy it insetad of updating planning_env_
 void FRASIEROpenRAVE::computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd&  q_sol, bool check_coll){
   std::cout << "RAVE: computing IK..." << std::endl;
+
   Json::Value opt_j = createJsonValueIK(eef_pose, check_coll);
 
   updatePlanningEnv();
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env_);
   trajopt::TrajOptResultPtr traj_result = trajopt::OptimizeProblem(traj_prob, plan_plotter_);
-
+  trajopt::ConstraintPtr ineq;
+  
   q_sol = traj_result->traj.row(0);
 
 }
 
 Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
-  json opt_j, disc_coll_j, cont_coll_j, joint_vel_j, basic_info_j, init_info_j;
-
-  OpenRAVE::Transform hsr_pose = hsr_->GetLink("base_link")->GetTransform();
-
-  std::vector<json> eef_pose_j;
-  eef_pose_j.resize(eef_goals.n_goals);
 
   int n_steps = eef_goals.no_waypoints;
   int first_step = 0; int last_step = n_steps-1;
 
-  std::vector<double> joint_vel_coeffs(8, 1.0);
+  json opt_j, disc_coll_j, cont_coll_j, joint_vel_j, basic_info_j, init_info_j;
+
+  OpenRAVE::Transform hsr_pose = hsr_->GetLink("base_link")->GetTransform();
+  int n_joints = manip_->GetArmDOF();
+
+  std::vector<json> eef_pose_j;
+  eef_pose_j.resize(eef_goals.n_goals);
+
+
+  std::vector<double> joint_vel_coeffs(n_joints, 1.0);
   std::vector<int> disc_coll_coeffs(n_steps, 50);
   std::vector<double> disc_coll_pen(n_steps, 0.050);
 
@@ -166,6 +164,8 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
 
   }
 
+
+
   init_info_j = { {"type", "stationary"} };
 
   opt_j["basic_info"] = basic_info_j;
@@ -188,15 +188,18 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
   return v;
 }
 
-Json::Value FRASIEROpenRAVE::createJsonValueTraj(std::vector<double>& q, int n_steps){
+Json::Value FRASIEROpenRAVE::createJsonValueTraj(JointPosGoals& joint_goals){
   json opt_j, joint_target_j, disc_coll_j, cont_coll_j, joint_vel_j, basic_info_j, init_info_j;
 
+  int n_steps = joint_goals.no_waypoints;
+  int n_joints = manip_->GetArmDOF();
 
   int first_step = 0; int last_step = n_steps-1;
 
-  std::vector<double> joint_vel_coeffs(8, 1.0);
+  std::vector<double> joint_vel_coeffs(n_joints, 1.0);
   std::vector<int> disc_coll_coeffs(n_steps, 50);
   std::vector<double> disc_coll_pen(n_steps, 0.050);
+  std::vector<double> joint_coeffs(n_joints, 1.0);
 
   basic_info_j = { {"n_steps", n_steps}, {"manip", "whole_body"}, {"start_fixed", true} };
 
@@ -220,9 +223,11 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(std::vector<double>& q, int n_s
                              {"last_step", last_step} } }
   };
 
-  joint_target_j = { {"type", "joint"},
+
+  joint_target_j = { {"type", "joint"}, // TODO: add timesteps
                      {"params", {
-                                  {"vals", q} } }
+                                  {"vals", joint_goals.q},
+                                  {"coeffs", joint_coeffs} } }
   };
 
   init_info_j = { {"type", "stationary"} };
@@ -277,10 +282,120 @@ Json::Value FRASIEROpenRAVE::createJsonValueIK(OpenRAVE::Transform& eef_pose, bo
   return v;
 }
 
+trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeOnTheFlyTraj(EEFPoseGoals &eef_goals, bool plot) {
+
+  int n_steps = eef_goals.no_waypoints;
+  int first_step = 0; int last_step = n_steps-1;
+
+  json opt_j, disc_coll_j, cont_coll_j, joint_vel_j, basic_info_j, init_info_j;
+
+  OpenRAVE::Transform hsr_pose = hsr_->GetLink("base_link")->GetTransform();
+  int n_joints = manip_->GetArmDOF();
+
+  std::vector<json> eef_pose_j;
+  eef_pose_j.resize(eef_goals.n_goals);
+
+  std::vector<json> joint_target_j;
+  joint_target_j.resize(n_steps);
+
+  std::vector<double> joint_vel_coeffs(n_joints, 1.0);
+  std::vector<int> disc_coll_coeffs(n_steps, 50);
+  std::vector<double> disc_coll_pen(n_steps, 0.050);
+
+  basic_info_j = { {"n_steps", n_steps}, {"manip", "whole_body"}, {"start_fixed", true} };
+
+  joint_vel_j = { {"type", "joint_vel"}, {"params", { {"coeffs", joint_vel_coeffs} } } };
+
+  disc_coll_j = { {"type", "collision"},
+                  {"params", {
+                             {"coeffs", disc_coll_coeffs},
+                             {"continuous", false},
+                             {"dist_pen", disc_coll_pen},
+                             {"first_step", first_step},
+                             {"last_step", last_step} } }
+  };
+
+  cont_coll_j = { {"type", "collision"},
+                  {"params", {
+                             {"coeffs", disc_coll_coeffs},
+                             {"continuous", true},
+                             {"dist_pen", disc_coll_pen},
+                             {"first_step", first_step},
+                             {"last_step", last_step} } }
+  };
+
+  for (int i = 0; i < eef_goals.n_goals; i++) {
+    OpenRAVE::Transform eef_pose_goal = eef_goals.poses[i];
+    OpenRAVE::Transform eef_goal;
+
+    if (eef_goals.wrt_world){
+      eef_goal = eef_pose_goal;
+    }
+    else{
+      eef_goal = hsr_pose * eef_pose_goal; // trasform from robot fixed frame to world frame
+    }
+
+
+    eef_pose_j[i] = { {"type", "pose"},
+                      {"params", {
+                                 {"xyz", {eef_goal.trans[0], eef_goal.trans[1], eef_goal.trans[2]}},
+                                 {"wxyz", {eef_goal.rot[0], eef_goal.rot[1], eef_goal.rot[2], eef_goal.rot[3]}},
+                                 {"link", "hand_palm_link"},
+                                 {"timestep", eef_goals.timesteps[i]}
+                               } }
+    };
+
+
+  }
+  std::vector<double> q(n_joints, 0.0);
+
+  std::vector<double> joint_coeffs(n_joints, 0.0);
+  joint_coeffs[8] = 1.0;
+
+  for (int j = 0; j < n_steps; j++) {
+    if (j >= eef_goals.timesteps[0]){
+      q[8] = eef_goals.aperture;
+    }else{
+      q[8] = hsr_->GetJoint("hand_motor_joint")->GetValue(0);
+    }
+
+    joint_target_j[j] = { {"type", "joint"},
+                          {"params", {
+                                     {"vals", q},
+                                     {"coeffs", joint_coeffs},
+                                     {"timestep", j}
+                                   } }
+    };
+  }
+
+
+  init_info_j = { {"type", "stationary"} };
+
+  opt_j["basic_info"] = basic_info_j;
+  opt_j["costs"] = {joint_vel_j, disc_coll_j, cont_coll_j};
+  opt_j["constraints"] = {eef_pose_j[0], eef_pose_j[1],  joint_target_j[1], joint_target_j[2], joint_target_j[3],
+                          joint_target_j[4], joint_target_j[5], joint_target_j[6], joint_target_j[7], joint_target_j[8], joint_target_j[9]};
+//  opt_j["constraints"] = {eef_pose_j[0], eef_pose_j[1]};
+//  opt_j["constraints"] = {eef_pose_j[0], eef_pose_j[1], joint_target_j[1]};
+  opt_j["init_info"] = init_info_j;
+
+
+  Json::Value v;
+  Json::Reader r;
+
+  std::string opt_j_str = opt_j.dump();
+  std::cout << opt_j.dump(4) << std::endl;
+
+  if (!r.parse(opt_j_str, v, false)) {
+    std::cout << "can't read json!"  << std::endl;
+    std::cout << r.getFormatedErrorMessages() << std::endl;
+  }
+}
+// TODO: Try velocity limits
 void FRASIEROpenRAVE::smoothTrajectory(trajectory_msgs::JointTrajectory &traj,
                                          trajectory_msgs::JointTrajectory &traj_smoothed) {
 
-  int no_dof = 8;
+  int no_dof = manip_->GetArmDOF();;
   int no_waypoints = traj.points.size();
   ecl::Trajectory<ecl::JointAngles> ecl_traj(no_dof);
   ecl::WayPoint<ecl::JointAngles> waypoint(no_dof);
@@ -352,6 +467,8 @@ void FRASIEROpenRAVE::releaseObject(std::string& obj_name) {
 ////////////////////////////// UTILITIES //////////////////////////////
 trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::MatrixXd &traj) {
 
+  int n_joints = manip_->GetArmDOF();
+
   trajectory_msgs::JointTrajectory traj_ros;
 
   traj_ros.joint_names.push_back("odom_x");
@@ -367,11 +484,11 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::Matri
   traj_ros.points.resize(traj.rows());
 
   for (int i = 0; i < traj.rows(); i++) {
-    traj_ros.points[i].positions.resize(8);
-    traj_ros.points[i].velocities.resize(8);
-    traj_ros.points[i].accelerations.resize(8);
+    traj_ros.points[i].positions.resize(n_joints);
+    traj_ros.points[i].velocities.resize(n_joints);
+    traj_ros.points[i].accelerations.resize(n_joints);
 
-    for (int j = 0; j < 8; j++) {
+    for (int j = 0; j < n_joints; j++) {
       traj_ros.points[i].positions[j] = traj(i, j);
       traj_ros.points[i].velocities[j] = 0.0;
       traj_ros.points[i].accelerations[j] = 0.0;
@@ -395,49 +512,18 @@ void FRASIEROpenRAVE::drawTransform(OpenRAVE::Transform &T) {
   arrow_x->SetShow(true);
 }
 
-void FRASIEROpenRAVE::playTrajectory(Eigen::MatrixXd& traj){
+void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
   std::vector<int> q_index;
   getWholeBodyJointIndex(q_index);
 
-  for (int i = 0; i < traj.rows(); i++) {
-    hsr_->SetDOFValues(trajopt::trajToDblVec(traj.row(i)), 1, q_index);
-    ros::Duration(0.5).sleep();
+  for (int i = 0; i < traj.points.size(); i++) {
+    hsr_->SetDOFValues(traj.points[i].positions, 1, q_index);
+    ros::Duration(traj.points[1].time_from_start).sleep();
   }
 }
 
 ////////////////////////////// GRASPING //////////////////////////////
-Grasp FRASIEROpenRAVE::generateGraspPose(){
-  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
 
-  Grasp grasp;
-  std::vector <OpenRAVE::KinBodyPtr> bodies;
-  env_->GetBodies(bodies);
-  double closest_distance = std::numeric_limits<double>::max();
-  for (int i = 0; i < bodies.size(); i++) {
-   std::string body_name = bodies[i]->GetName();
-
-   if (body_name.substr(0,3) == "obj"){
-     std::cout << "RAVE: creating a grasp pose for " << body_name << std::endl;
-
-     OpenRAVE::Transform obj_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
-
-     double distance = std::sqrt(std::pow(obj_pose.trans.x, 2) + std::pow(obj_pose.trans.y, 2));
-     if (distance < closest_distance){
-
-       obj_pose.rot = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
-       obj_pose.trans.y = obj_pose.trans.y - 0.03;
-
-       grasp.pose = obj_pose;
-       grasp.obj_name = body_name;
-       closest_distance = distance;
-
-     }
-   }
-
-  }
-
-  return grasp;
-}
 
 
 OpenRAVE::Transform FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
@@ -449,6 +535,62 @@ OpenRAVE::Transform FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
   grasp_pose.trans.y = grasp_pose.trans.y - 0.03;
 
   return grasp_pose;
+}
+
+OpenRAVE::Transform FRASIEROpenRAVE::generatePlacePose(std::string &obj_name) {
+  OpenRAVE::Transform place_pose;
+  place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+
+  OpenRAVE::KinBodyPtr object = env_->GetKinBody(obj_name);
+  OpenRAVE::Transform object_pose = object->GetTransform();
+  std::string shelf_name = "shelf_1";
+  OpenRAVE::KinBodyPtr shelf = env_->GetKinBody(shelf_name);
+  OpenRAVE::Transform shelf_pose = shelf->GetTransform();
+
+  if(object_pose.trans.y < shelf_pose.trans.y){
+    place_pose.trans = object_pose.trans;
+    place_pose.trans.y = place_pose.trans.y + 0.2;
+    place_pose.trans.x = place_pose.trans.x + 0.1;
+  }else{
+    place_pose.trans = object_pose.trans;
+    place_pose.trans.y = place_pose.trans.y - 0.2;
+    place_pose.trans.x = place_pose.trans.x + 0.1;
+  }
+
+  return place_pose;
+}
+
+Grasp FRASIEROpenRAVE::generateGraspPose(){
+  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
+
+  Grasp grasp;
+  std::vector <OpenRAVE::KinBodyPtr> bodies;
+  env_->GetBodies(bodies);
+  double closest_distance = std::numeric_limits<double>::max();
+  for (int i = 0; i < bodies.size(); i++) {
+    std::string body_name = bodies[i]->GetName();
+
+    if (body_name.substr(0,3) == "obj"){
+      std::cout << "RAVE: creating a grasp pose for " << body_name << std::endl;
+
+      OpenRAVE::Transform obj_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
+
+      double distance = std::sqrt(std::pow(obj_pose.trans.x, 2) + std::pow(obj_pose.trans.y, 2));
+      if (distance < closest_distance){
+
+        obj_pose.rot = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
+        obj_pose.trans.y = obj_pose.trans.y - 0.03;
+
+        grasp.pose = obj_pose;
+        grasp.obj_name = body_name;
+        closest_distance = distance;
+
+      }
+    }
+
+  }
+
+  return grasp;
 }
 
 std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
@@ -464,10 +606,10 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
     if (body_name.substr(0,5) == "shelf"){
       std::cout << "RAVE: creating a place pose for " << body_name << std::endl;
 
-      OpenRAVE::Transform place_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
-
-      place_pose.rot = OpenRAVE::Vector(0.5, 0.5, -0.5, 0.5);
-      place_pose.trans.z = place_pose.trans.z + 0.12;
+//      OpenRAVE::Transform place_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
+      OpenRAVE::Transform place_pose = bodies[i]->GetTransform();
+      place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+      place_pose.trans.z = place_pose.trans.z + 0.1;
 
       place_poses.push_back(place_pose);
 
