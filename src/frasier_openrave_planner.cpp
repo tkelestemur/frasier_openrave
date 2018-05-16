@@ -451,7 +451,19 @@ void FRASIEROpenRAVE::smoothTrajectory(trajectory_msgs::JointTrajectory &traj,
 
 }
 
+// TODO: Impelemt this
+void FRASIEROpenRAVE::checkCollisions(trajectory_msgs::JointTrajectory& traj) {
+//   OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+   OpenRAVE::CollisionReportPtr report(new OpenRAVE::CollisionReport());
+  {
+    OpenRAVE::RobotBase::RobotStateSaver saver(hsr_); // save the state
+    for(int i=0; i < traj.points.size(); i++){
 
+    }
+
+  }
+
+}
 
 
 void FRASIEROpenRAVE::grabObject(std::string& obj_name) {

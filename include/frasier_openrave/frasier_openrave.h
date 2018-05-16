@@ -88,6 +88,7 @@ public:
   void releaseObject(std::string& obj_name);
   void smoothTrajectory(trajectory_msgs::JointTrajectory& traj,
                         trajectory_msgs::JointTrajectory& traj_smoothed);
+  void checkCollisions(trajectory_msgs::JointTrajectory& traj);
 
   //  Utilities
   void playTrajectory(trajectory_msgs::JointTrajectory& traj);
