@@ -555,7 +555,7 @@ OpenRAVE::Transform FRASIEROpenRAVE::generatePlacePose(std::string &obj_name) {
 
   OpenRAVE::KinBodyPtr object = env_->GetKinBody(obj_name);
   OpenRAVE::Transform object_pose = object->GetTransform();
-  std::string shelf_name = "shelf_1";
+  std::string shelf_name = "rack_1";
   OpenRAVE::KinBodyPtr shelf = env_->GetKinBody(shelf_name);
   OpenRAVE::Transform shelf_pose = shelf->GetTransform();
 
@@ -582,7 +582,7 @@ Grasp FRASIEROpenRAVE::generateGraspPose(){
   for (int i = 0; i < bodies.size(); i++) {
     std::string body_name = bodies[i]->GetName();
 
-    if (body_name.substr(0,3) == "obj"){
+    if (body_name.substr(0, 9) == "table_obj"){
       std::cout << "RAVE: creating a grasp pose for " << body_name << std::endl;
 
       OpenRAVE::Transform obj_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
@@ -615,7 +615,7 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
   for (int i = 0; i < bodies.size(); i++) {
     std::string body_name = bodies[i]->GetName();
 
-    if (body_name.substr(0,5) == "shelf"){
+    if (body_name.substr(0, 4) == "rack"){
       std::cout << "RAVE: creating a place pose for " << body_name << std::endl;
 
 //      OpenRAVE::Transform place_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
