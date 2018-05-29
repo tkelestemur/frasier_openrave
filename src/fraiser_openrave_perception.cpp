@@ -13,7 +13,6 @@ void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform&
     body._bVisible = true;
     body._type = OpenRAVE::GeometryType::GT_Box;
     body._vGeomData = OpenRAVE::Vector(size[0]/2, size[1]/2, size[2]/2);
-//    body._t = hsr_pose * obj_pose;
 
     std::list<OpenRAVE::KinBody::GeometryInfo> geoms;
     geoms.push_back(body);
@@ -31,4 +30,19 @@ void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform&
 void FRASIEROpenRAVE::removeCollisionObj(std::string& obj_name) {
     OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
     bool result = env_->Remove(env_->GetKinBody(obj_name));
+}
+
+void FRASIEROpenRAVE::removeTableObjects() {
+  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+
+  std::vector <OpenRAVE::KinBodyPtr> bodies;
+  env_->GetBodies(bodies);
+  for (auto body : bodies) {
+    std::string body_name = body->GetName();
+
+    if (body_name.substr(0, 9) == "table_obj"){
+      env_->Remove(body);
+    }
+
+  }
 }

@@ -4,6 +4,8 @@
 // ROS
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <tf/transform_listener.h>
+#include <geometry_msgs/Pose.h>
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <control_msgs/FollowJointTrajectoryGoal.h>
@@ -13,8 +15,6 @@
 #include <tmc_manipulation_msgs/ArmNavigationErrorCodes.h>
 #include <tmc_control_msgs/GripperApplyEffortAction.h>
 #include <tmc_control_msgs/GripperApplyEffortGoal.h>
-
-
 
 
 // Other
@@ -64,10 +64,8 @@ public:
 
   void graspOrRelease(GRIPPER_STATE state);
 
-
-
-//  void setStartState(sensor_msgs::JointState& start_state);
-
+  void gripperThread();
+  void runGripperThread(geometry_msgs::Pose& pose);
 private:
   ros::NodeHandle nh_;
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> arm_cli_;
@@ -77,14 +75,16 @@ private:
   actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> gripper_pos_cli_;
   actionlib::SimpleActionClient<tmc_control_msgs::GripperApplyEffortAction> gripper_cli_;
 
-
   ros::ServiceClient filter_traj_srv_;
-  sensor_msgs::JointState start_state_;
+  geometry_msgs::Pose eef_target_pose_;
+
 
   bool joint_state_flag_;
 
+
   boost::mutex joint_state_mutex_;
-  const double CONTROLLER_TIMEOUT = 20.0;
+  boost::thread gripper_thread_;
+  const double CONTROLLER_TIMEOUT = 50.0;
 };
 
 

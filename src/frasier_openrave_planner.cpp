@@ -1,4 +1,5 @@
 #include <frasier_openrave/frasier_openrave.h>
+#include <geometry_msgs/Pose.h>
 
 ////////////////////////////// RRT //////////////////////////////
 //void FRASIEROpenRAVE::planToConf(std::vector<double>& q){
@@ -472,9 +473,13 @@ void FRASIEROpenRAVE::grabObject(std::string& obj_name) {
 }
 
 void FRASIEROpenRAVE::releaseObject(std::string& obj_name) {
+  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
   OpenRAVE::KinBodyPtr released_object = env_->GetKinBody(obj_name);
   hsr_->Release(released_object);
+  std::string new_name = "released" + obj_name;
+  released_object->SetName(new_name);
 }
+
 
 ////////////////////////////// UTILITIES //////////////////////////////
 trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::MatrixXd &traj) {
@@ -511,6 +516,21 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::Matri
   return traj_ros;
 }
 
+geometry_msgs::Pose FRASIEROpenRAVE::orTransformtoROSPose(OpenRAVE::Transform &transform) {
+  geometry_msgs::Pose pose;
+  pose.position.x = transform.trans.x;
+  pose.position.y = transform.trans.y;
+  pose.position.z = transform.trans.z;
+
+  pose.orientation.w = transform.rot[0];
+  pose.orientation.x = transform.rot[1];
+  pose.orientation.y = transform.rot[2];
+  pose.orientation.z = transform.rot[3];
+
+  return pose;
+
+}
+
 void FRASIEROpenRAVE::drawTransform(OpenRAVE::Transform &T) {
   OpenRAVE::TransformMatrix M;
   OpenRAVE::geometry::matrixFromQuat(M, T.rot);
@@ -535,9 +555,6 @@ void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
 }
 
 ////////////////////////////// GRASPING //////////////////////////////
-
-
-
 OpenRAVE::Transform FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
   OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
   OpenRAVE::KinBodyPtr object = env_->GetKinBody(obj_name);
@@ -561,12 +578,12 @@ OpenRAVE::Transform FRASIEROpenRAVE::generatePlacePose(std::string &obj_name) {
 
   if(object_pose.trans.y < shelf_pose.trans.y){
     place_pose.trans = object_pose.trans;
-    place_pose.trans.y = place_pose.trans.y + 0.2;
-    place_pose.trans.x = place_pose.trans.x + 0.1;
+    place_pose.trans.y = place_pose.trans.y + 0.15;
+    place_pose.trans.x = place_pose.trans.x + 0.03;
   }else{
     place_pose.trans = object_pose.trans;
-    place_pose.trans.y = place_pose.trans.y - 0.2;
-    place_pose.trans.x = place_pose.trans.x + 0.1;
+    place_pose.trans.y = place_pose.trans.y - 0.15;
+    place_pose.trans.x = place_pose.trans.x + 0.03;
   }
 
   return place_pose;
@@ -579,19 +596,19 @@ Grasp FRASIEROpenRAVE::generateGraspPose(){
   std::vector <OpenRAVE::KinBodyPtr> bodies;
   env_->GetBodies(bodies);
   double closest_distance = std::numeric_limits<double>::max();
-  for (int i = 0; i < bodies.size(); i++) {
-    std::string body_name = bodies[i]->GetName();
+  for (const auto body : bodies) {
+    std::string body_name = body->GetName();
 
     if (body_name.substr(0, 9) == "table_obj"){
-      std::cout << "RAVE: creating a grasp pose for " << body_name << std::endl;
+//      std::cout << "RAVE: creating a grasp pose for " << body_name << std::endl;
 
-      OpenRAVE::Transform obj_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
+      OpenRAVE::Transform obj_pose = hsr_pose.inverse() * body->GetTransform();
 
       double distance = std::sqrt(std::pow(obj_pose.trans.x, 2) + std::pow(obj_pose.trans.y, 2));
       if (distance < closest_distance){
 
         obj_pose.rot = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
-        obj_pose.trans.y = obj_pose.trans.y - 0.03;
+        obj_pose.trans.y = obj_pose.trans.y - 0.01;
 
         grasp.pose = obj_pose;
         grasp.obj_name = body_name;
@@ -608,25 +625,58 @@ Grasp FRASIEROpenRAVE::generateGraspPose(){
 std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
   OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
 
-  std::vector<OpenRAVE::Transform> place_poses;
+  std::vector<OpenRAVE::Transform> place_poses, mid_place_poses, left_place_poses, right_place_poses;
 
   std::vector <OpenRAVE::KinBodyPtr> bodies;
   env_->GetBodies(bodies);
-  for (int i = 0; i < bodies.size(); i++) {
-    std::string body_name = bodies[i]->GetName();
+
+  for (const auto body : bodies) {
+    std::string body_name = body->GetName();
 
     if (body_name.substr(0, 4) == "rack"){
-      std::cout << "RAVE: creating a place pose for " << body_name << std::endl;
+      std::cout << "RAVE: creating place poses for " << body_name << std::endl;
 
 //      OpenRAVE::Transform place_pose = hsr_pose.inverse() * bodies[i]->GetTransform();
-      OpenRAVE::Transform place_pose = bodies[i]->GetTransform();
-      place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
-      place_pose.trans.z = place_pose.trans.z + 0.1;
+      OpenRAVE::Transform rack_pose = body->GetTransform();
+      OpenRAVE::Transform mid_place_pose, left_place_pose, right_place_pose;
 
-      place_poses.push_back(place_pose);
+      mid_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+      mid_place_pose.trans.x = rack_pose.trans.x;
+      mid_place_pose.trans.y = rack_pose.trans.y;
+      mid_place_pose.trans.z = rack_pose.trans.z + 0.1;
+
+      mid_place_poses.push_back(mid_place_pose);
+
+      left_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+      left_place_pose.trans.x = rack_pose.trans.x;
+      left_place_pose.trans.y = rack_pose.trans.y + 0.15;
+      left_place_pose.trans.z = rack_pose.trans.z + 0.1;
+
+      left_place_poses.push_back(left_place_pose);
+
+      right_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+      right_place_pose.trans.x = rack_pose.trans.x;
+      right_place_pose.trans.y = rack_pose.trans.y - 0.15;
+      right_place_pose.trans.z = rack_pose.trans.z + 0.1;
+
+      right_place_poses.push_back(right_place_pose);
 
     }
 
   }
+
+
+  for (int i = 0; i < mid_place_poses.size(); i++) {
+    place_poses.push_back(mid_place_poses[i]);
+  }
+
+  for (int i = 0; i < right_place_poses.size(); i++) {
+    place_poses.push_back(right_place_poses[i]);
+  }
+
+  for (int i = 0; i < left_place_poses.size(); i++) {
+    place_poses.push_back(left_place_poses[i]);
+  }
+
   return place_poses;
 }

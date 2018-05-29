@@ -205,7 +205,7 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
   else if(state == HEAD_STATE::LOOK_SHELF){
     std::cout << "CONTROL: moving head towards shelf... "  << std::endl;
     goal.trajectory.points[0].positions[0] = 0.0;
-    goal.trajectory.points[0].positions[1] = -0.60;
+    goal.trajectory.points[0].positions[1] = -0.45;
   }
 
 
@@ -250,9 +250,40 @@ void FRASIERController::executeGraspTraj(trajectory_msgs::JointTrajectory &traj)
 
 }
 
+void FRASIERController::gripperThread() {
+  tf::TransformListener listener;
+  std::string target_frame = "hand_palm_link"; //
+  std::string fixed_frame = "odom";
+  listener.waitForTransform(fixed_frame, target_frame, ros::Time(0), ros::Duration(2.0));
+  Eigen::Vector3d err;
+  ros::Rate rate(10);
+  while(ros::ok()){
+    tf::StampedTransform transform;
+    listener.lookupTransform(fixed_frame, target_frame, ros::Time(0), transform);
+    double x_err = eef_target_pose_.position.x - transform.getOrigin().x();
+    double y_err = eef_target_pose_.position.y - transform.getOrigin().y();
+    double z_err = eef_target_pose_.position.z - transform.getOrigin().z();
+    err[0] = x_err;
+    err[1] = y_err;
+    err[2] = z_err;
+//    std::cout << "eef x y z: " << transform.getOrigin().x() << " "
+//                               << transform.getOrigin().y() << " "
+//                               << transform.getOrigin().z() << std::endl;
 
-//void FRASIERController::setStartState(sensor_msgs::JointState &start_state) {
-//    start_state_ = start_state;
-//}
+    double err_total = err.transpose() * err;
+//    std::cout << "err: " << err << std::endl;
+//    std::cout << "err^T: " << err.transpose() << std::endl;
+//    std::cout << "total error: " << err_total << std::endl;
+    if (err_total < 1.0e-3){
+      tmc_control_msgs::GripperApplyEffortGoal goal;
+      goal.effort = -0.5;
+      gripper_cli_.sendGoal(goal);
+    }
+    rate.sleep();
+  }
+}
 
-
+void FRASIERController::runGripperThread(geometry_msgs::Pose& pose) {
+  eef_target_pose_ = pose;
+  gripper_thread_ = boost::thread(&FRASIERController::gripperThread, this);
+}

@@ -6,6 +6,7 @@
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose2D.h>
+#include <geometry_msgs/Pose.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <ecl/exceptions/standard_exception.hpp>
 #include <ecl/manipulators.hpp>
@@ -86,6 +87,7 @@ public:
   void computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
   void grabObject(std::string& obj_name);
   void releaseObject(std::string& obj_name);
+  void removeTableObjects();
   void smoothTrajectory(trajectory_msgs::JointTrajectory& traj,
                         trajectory_msgs::JointTrajectory& traj_smoothed);
   void checkCollisions(trajectory_msgs::JointTrajectory& traj);
@@ -94,6 +96,7 @@ public:
   void playTrajectory(trajectory_msgs::JointTrajectory& traj);
   void drawTransform(OpenRAVE::Transform& T);
   trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
+  geometry_msgs::Pose orTransformtoROSPose(OpenRAVE::Transform& transform);
 
 
   // Grasping
