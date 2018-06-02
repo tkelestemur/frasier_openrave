@@ -649,14 +649,14 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
 
       left_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
       left_place_pose.trans.x = rack_pose.trans.x;
-      left_place_pose.trans.y = rack_pose.trans.y + 0.15;
+      left_place_pose.trans.y = rack_pose.trans.y + 0.30;
       left_place_pose.trans.z = rack_pose.trans.z + 0.1;
 
       left_place_poses.push_back(left_place_pose);
 
       right_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
       right_place_pose.trans.x = rack_pose.trans.x;
-      right_place_pose.trans.y = rack_pose.trans.y - 0.15;
+      right_place_pose.trans.y = rack_pose.trans.y - 0.30;
       right_place_pose.trans.z = rack_pose.trans.z + 0.1;
 
       right_place_poses.push_back(right_place_pose);
