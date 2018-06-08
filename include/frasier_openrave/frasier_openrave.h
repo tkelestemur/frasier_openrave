@@ -57,6 +57,7 @@ struct Grasp {
     OpenRAVE::Transform pose;
 };
 
+
 class FRASIEROpenRAVE{
 public:
   FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer=false, bool real_robot=false);
@@ -73,6 +74,7 @@ public:
   void getActiveJointIndex(std::vector<int>& q_index);
   void getWholeBodyJointIndex(std::vector<int>& q_index);
   OpenRAVE::Transform getRobotTransform();
+  geometry_msgs::Pose2D getRobotPose();
   void startThreads();
 
 
@@ -129,6 +131,7 @@ private:
 
   bool joint_state_flag_, run_viewer_flag_, run_joint_updater_flag_;
   bool plan_plotter_;
+
   OpenRAVE::EnvironmentBasePtr env_, planning_env_;
   OpenRAVE::ViewerBasePtr viewer_;
   OpenRAVE::RobotBasePtr hsr_;
@@ -139,6 +142,11 @@ private:
   boost::thread viewer_thread_;
   boost::thread joint_state_thread_;
   boost::mutex joint_state_mutex_, base_state_mutex_;
+
+  OpenRAVE::Vector FRONT_EEF_ROT, LEFT_EEF_ROT, RIGHT_EEF_ROT, BACK_EEF_ROT, FRONT_TOP_EEF_ROT;
+  double COLLISION_PENALTY;
+  int COLLISION_COEFF;
+  double MAX_FINGER_APERTURE;
 
 
 };

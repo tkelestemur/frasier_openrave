@@ -187,6 +187,38 @@ void FRASIERController::moveToKnownState(MOVE_STATE state){
 
 }
 
+void FRASIERController::moveArmToKnownStatE(ARM_STATE state) {
+  std::cout << "CONTROL: moving arm to known state... "  << std::endl;
+
+  control_msgs::FollowJointTrajectoryGoal arm_goal;
+  trajectory_msgs::JointTrajectory arm_traj;
+
+  arm_traj.joint_names.push_back("arm_lift_joint");
+  arm_traj.joint_names.push_back("arm_flex_joint");
+  arm_traj.joint_names.push_back("arm_roll_joint");
+  arm_traj.joint_names.push_back("wrist_flex_joint");
+  arm_traj.joint_names.push_back("wrist_roll_joint");
+
+  arm_traj.points.resize(1);
+
+  if (state == ARM_STATE::GIVE) {
+
+    arm_traj.points[0].positions[0] = 0.14;
+    arm_traj.points[0].positions[1] = -0.47;
+    arm_traj.points[0].positions[2] = 0.0;
+    arm_traj.points[0].positions[3] = -1.10;
+    arm_traj.points[0].positions[4] = 0.0;
+  }
+
+  arm_traj.points[0].time_from_start = ros::Duration(5.0);
+
+  arm_goal.trajectory = arm_traj;
+
+  arm_cli_.sendGoal(arm_goal);
+  arm_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+
+}
+
 void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
 
 

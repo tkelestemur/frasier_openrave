@@ -116,8 +116,8 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
 
 
   std::vector<double> joint_vel_coeffs(n_joints, 1.0);
-  std::vector<int> disc_coll_coeffs(n_steps, 50);
-  std::vector<double> disc_coll_pen(n_steps, 0.050);
+  std::vector<int> disc_coll_coeffs(n_steps, COLLISION_COEFF);
+  std::vector<double> disc_coll_pen(n_steps, COLLISION_PENALTY);
 
   basic_info_j = { {"n_steps", n_steps}, {"manip", "whole_body"}, {"start_fixed", true} };
 
@@ -198,8 +198,8 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(JointPosGoals& joint_goals){
   int first_step = 0; int last_step = n_steps-1;
 
   std::vector<double> joint_vel_coeffs(n_joints, 1.0);
-  std::vector<int> disc_coll_coeffs(n_steps, 50);
-  std::vector<double> disc_coll_pen(n_steps, 0.050);
+  std::vector<int> disc_coll_coeffs(n_steps, COLLISION_COEFF);
+  std::vector<double> disc_coll_pen(n_steps, COLLISION_PENALTY);
   std::vector<double> joint_coeffs(n_joints, 1.0);
 
   basic_info_j = { {"n_steps", n_steps}, {"manip", "whole_body"}, {"start_fixed", true} };
@@ -560,7 +560,7 @@ OpenRAVE::Transform FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
   OpenRAVE::KinBodyPtr object = env_->GetKinBody(obj_name);
 
   OpenRAVE::Transform grasp_pose = hsr_pose.inverse() * object->GetTransform();
-  grasp_pose.rot = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
+  grasp_pose.rot = LEFT_EEF_ROT;
   grasp_pose.trans.y = grasp_pose.trans.y - 0.03;
 
   return grasp_pose;
@@ -568,7 +568,7 @@ OpenRAVE::Transform FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
 
 OpenRAVE::Transform FRASIEROpenRAVE::generatePlacePose(std::string &obj_name) {
   OpenRAVE::Transform place_pose;
-  place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+  place_pose.rot = FRONT_EEF_ROT;
 
   OpenRAVE::KinBodyPtr object = env_->GetKinBody(obj_name);
   OpenRAVE::Transform object_pose = object->GetTransform();
@@ -594,30 +594,46 @@ Grasp FRASIEROpenRAVE::generateGraspPose(){
 
   Grasp grasp;
   std::vector <OpenRAVE::KinBodyPtr> bodies;
+  OpenRAVE::KinBodyPtr grasp_body;
   env_->GetBodies(bodies);
   double closest_distance = std::numeric_limits<double>::max();
   for (const auto body : bodies) {
     std::string body_name = body->GetName();
 
     if (body_name.substr(0, 9) == "table_obj"){
-//      std::cout << "RAVE: creating a grasp pose for " << body_name << std::endl;
 
       OpenRAVE::Transform obj_pose = hsr_pose.inverse() * body->GetTransform();
 
       double distance = std::sqrt(std::pow(obj_pose.trans.x, 2) + std::pow(obj_pose.trans.y, 2));
       if (distance < closest_distance){
-
-        obj_pose.rot = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
-        obj_pose.trans.y = obj_pose.trans.y - 0.01;
-
-        grasp.pose = obj_pose;
-        grasp.obj_name = body_name;
+        grasp_body = body;
         closest_distance = distance;
 
       }
     }
 
   }
+
+  OpenRAVE::Transform object_pose = grasp_body->GetTransform();
+  OpenRAVE::Vector object_size = grasp_body->GetLink("base")->GetGeometry(0)->GetBoxExtents();
+  std::cout << "GRASP OBJECT SIZE:  " << object_size << std::endl;
+
+  if(object_size[0]*2 < MAX_FINGER_APERTURE){
+    grasp.pose.rot = LEFT_EEF_ROT;
+    grasp.pose.trans.x = object_pose.trans.x;
+    grasp.pose.trans.y = object_pose.trans.y - 0.02;
+    grasp.pose.trans.z = object_pose.trans.z;
+  }
+  else if(object_size[0]*2 >= MAX_FINGER_APERTURE){
+    if(object_size[1]*2 < MAX_FINGER_APERTURE){
+      grasp.pose.rot = FRONT_TOP_EEF_ROT;
+      grasp.pose.trans.x = object_pose.trans.x;
+      grasp.pose.trans.y = object_pose.trans.y;
+      grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+    }
+  }
+
+  grasp.obj_name = grasp_body->GetName();
 
   return grasp;
 }
@@ -640,21 +656,21 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
       OpenRAVE::Transform rack_pose = body->GetTransform();
       OpenRAVE::Transform mid_place_pose, left_place_pose, right_place_pose;
 
-      mid_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+      mid_place_pose.rot = FRONT_EEF_ROT;
       mid_place_pose.trans.x = rack_pose.trans.x;
       mid_place_pose.trans.y = rack_pose.trans.y;
       mid_place_pose.trans.z = rack_pose.trans.z + 0.1;
 
       mid_place_poses.push_back(mid_place_pose);
 
-      left_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+      left_place_pose.rot = FRONT_EEF_ROT;
       left_place_pose.trans.x = rack_pose.trans.x;
       left_place_pose.trans.y = rack_pose.trans.y + 0.30;
       left_place_pose.trans.z = rack_pose.trans.z + 0.1;
 
       left_place_poses.push_back(left_place_pose);
 
-      right_place_pose.rot = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+      right_place_pose.rot = FRONT_EEF_ROT;
       right_place_pose.trans.x = rack_pose.trans.x;
       right_place_pose.trans.y = rack_pose.trans.y - 0.30;
       right_place_pose.trans.z = rack_pose.trans.z + 0.1;
@@ -666,17 +682,18 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
   }
 
 
-  for (int i = 0; i < mid_place_poses.size(); i++) {
-    place_poses.push_back(mid_place_poses[i]);
+  for (auto pose : mid_place_poses) {
+    place_poses.push_back(pose);
   }
 
-  for (int i = 0; i < right_place_poses.size(); i++) {
-    place_poses.push_back(right_place_poses[i]);
+  for (auto pose : left_place_poses) {
+    place_poses.push_back(pose);
   }
 
-  for (int i = 0; i < left_place_poses.size(); i++) {
-    place_poses.push_back(left_place_poses[i]);
+  for (auto pose : right_place_poses) {
+    place_poses.push_back(pose);
   }
+
 
   return place_poses;
 }

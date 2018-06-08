@@ -35,6 +35,16 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
   whole_body_joint_names_ = {"base_x_joint", "base_y_joint", "base_t_joint", "arm_lift_joint", "arm_flex_joint",
                              "arm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"};
 
+  FRONT_EEF_ROT = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
+  BACK_EEF_ROT = OpenRAVE::Vector(0.707, 0.0, -0.707, 0.0);
+  LEFT_EEF_ROT = OpenRAVE::Vector(0.5, -0.5, -0.5, -0.5);
+  RIGHT_EEF_ROT = OpenRAVE::Vector(0.5, 0.5, -0.5, 0.5);
+  FRONT_TOP_EEF_ROT = OpenRAVE::Vector(0.0, 1.0, 0.0, 0.0);
+
+  COLLISION_PENALTY = 0.060;
+  COLLISION_COEFF = 50;
+  MAX_FINGER_APERTURE = 0.120;
+
 }
 
 FRASIEROpenRAVE::~FRASIEROpenRAVE(){
@@ -179,6 +189,10 @@ void FRASIEROpenRAVE::getWholeBodyJointIndex(std::vector<int>& q_index){
 
 OpenRAVE::Transform FRASIEROpenRAVE::getRobotTransform() {
   return hsr_->GetLink(base_link_)->GetTransform();
+}
+
+geometry_msgs::Pose2D FRASIEROpenRAVE::getRobotPose() {
+  return base_;
 }
 
 void FRASIEROpenRAVE::updateJointStates(){
