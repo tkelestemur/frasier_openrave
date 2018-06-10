@@ -555,15 +555,37 @@ void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
 }
 
 ////////////////////////////// GRASPING //////////////////////////////
-OpenRAVE::Transform FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
-  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
-  OpenRAVE::KinBodyPtr object = env_->GetKinBody(obj_name);
+Grasp FRASIEROpenRAVE::generateGraspPose(std::string &obj_name) {
+  Grasp grasp;
+  grasp.obj_name = obj_name;
+//  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
+  OpenRAVE::KinBodyPtr grasp_body = env_->GetKinBody(obj_name);
 
-  OpenRAVE::Transform grasp_pose = hsr_pose.inverse() * object->GetTransform();
-  grasp_pose.rot = LEFT_EEF_ROT;
-  grasp_pose.trans.y = grasp_pose.trans.y - 0.03;
+//  OpenRAVE::Transform object_pose = hsr_pose.inverse() * grasp_body->GetTransform();
+//  object_pose.rot = LEFT_EEF_ROT;
+//  object_pose.trans.y = object_pose.trans.y - 0.03;
 
-  return grasp_pose;
+  OpenRAVE::Vector object_size = grasp_body->GetLink("base")->GetGeometry(0)->GetBoxExtents();
+  OpenRAVE::Transform object_pose = grasp_body->GetTransform();
+
+  if(object_size[0]*2 < MAX_FINGER_APERTURE){
+    std::cout << "RAVE: selected side grasp for " << obj_name << std::endl;
+    grasp.pose.rot = LEFT_EEF_ROT;
+    grasp.pose.trans.x = object_pose.trans.x;
+    grasp.pose.trans.y = object_pose.trans.y - 0.02;
+    grasp.pose.trans.z = object_pose.trans.z;
+  }
+  else if(object_size[0]*2 >= MAX_FINGER_APERTURE){
+    std::cout << "RAVE: selected top grasp for " << obj_name << std::endl;
+    if(object_size[1]*2 < MAX_FINGER_APERTURE){
+      grasp.pose.rot = FRONT_TOP_EEF_ROT;
+      grasp.pose.trans.x = object_pose.trans.x;
+      grasp.pose.trans.y = object_pose.trans.y;
+      grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+    }
+  }
+
+  return grasp;
 }
 
 OpenRAVE::Transform FRASIEROpenRAVE::generatePlacePose(std::string &obj_name) {

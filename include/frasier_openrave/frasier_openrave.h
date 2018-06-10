@@ -104,7 +104,7 @@ public:
   // Grasping
   std::vector<OpenRAVE::Transform> generatePlacePoses();
   Grasp generateGraspPose();
-  OpenRAVE::Transform generateGraspPose(std::string& obj_name);
+  Grasp generateGraspPose(std::string& obj_name);
   OpenRAVE::Transform generatePlacePose(std::string& obj_name);
 
   // ROS
