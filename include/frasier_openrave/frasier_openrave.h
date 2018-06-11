@@ -98,7 +98,7 @@ public:
   void playTrajectory(trajectory_msgs::JointTrajectory& traj);
   void drawTransform(OpenRAVE::Transform& T);
   trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
-  geometry_msgs::Pose orTransformtoROSPose(OpenRAVE::Transform& transform);
+  geometry_msgs::Pose orTransformToROSPose(OpenRAVE::Transform& transform);
 
 
   // Grasping

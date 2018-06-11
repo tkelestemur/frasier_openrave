@@ -516,7 +516,7 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::Matri
   return traj_ros;
 }
 
-geometry_msgs::Pose FRASIEROpenRAVE::orTransformtoROSPose(OpenRAVE::Transform &transform) {
+geometry_msgs::Pose FRASIEROpenRAVE::orTransformToROSPose(OpenRAVE::Transform &transform) {
   geometry_msgs::Pose pose;
   pose.position.x = transform.trans.x;
   pose.position.y = transform.trans.y;
