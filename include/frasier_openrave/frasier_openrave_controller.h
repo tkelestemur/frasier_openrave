@@ -30,11 +30,15 @@ enum MOVE_STATE{
 };
 
 enum ARM_STATE{
-    GIVE
+    GRASP_CONF,
+    GIVE_CONF,
+    GO_CONF
 };
 
 enum HEAD_STATE{
-    LOOK_TABLE,
+    LOOK_TABLE_LEFT,
+    LOOK_TABLE_RIGHT,
+    LOOK_TABLE_FRONT,
     LOOK_SHELF
 };
 
@@ -52,7 +56,7 @@ public:
 
   void moveToKnownState(MOVE_STATE state);
   void moveHeadToKnownState(HEAD_STATE state);
-  void moveArmToKnownStatE(ARM_STATE state);
+  void moveArmToKnownState(ARM_STATE state);
 
 //  bool filterTrajectory(trajectory_msgs::JointTrajectory& traj,
 //                        trajectory_msgs::JointTrajectory& traj_filtered);

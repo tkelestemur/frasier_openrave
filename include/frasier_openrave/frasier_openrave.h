@@ -7,29 +7,34 @@
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Pose.h>
+#include <pcl_msgs/PolygonMesh.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <ecl/exceptions/standard_exception.hpp>
 #include <ecl/manipulators.hpp>
 #include <ecl/exceptions.hpp>
 
-// OpenRAVE
+// OpenRAVE+TrajOpt
 #include <openrave-0.9/openrave-core.h>
 #include <openrave/openrave.h>
 #include <openrave/kinbody.h>
 #include <openrave/planningutils.h>
 #include <openrave/geometry.h>
 #include <openrave/trajectory.h>
-
-#include <json/json.h>
 #include <trajopt/problem_description.hpp>
 
 // Other
 #include <frasier_openrave/json.hpp>
+#include <HACD/hacdInterface.h>
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
+#include <json/json.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/Dense>
+
+// PCL
+//#include <pcl/PolygonMesh.h>
 
 using json = nlohmann::json;
 
@@ -69,7 +74,7 @@ public:
   bool loadCustomEnv(std::string& world_path);
   void setViewer();
   void updateJointStates();
-  void updateCollisionEnv(); //TODO: Anas
+  void updateCollisionEnv();
   void updatePlanningEnv();
   void getActiveJointIndex(std::vector<int>& q_index);
   void getWholeBodyJointIndex(std::vector<int>& q_index);
@@ -104,19 +109,19 @@ public:
   // Grasping
   std::vector<OpenRAVE::Transform> generatePlacePoses();
   Grasp generateGraspPose();
-  Grasp generateGraspPose(std::string& obj_name);
+  Grasp generateGraspPose(int approach, std::string& obj_name);
   OpenRAVE::Transform generatePlacePose(std::string& obj_name);
 
   // ROS
   void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
-  void pointCloudCb(); // TODO: Anas
   void baseStateCb(const geometry_msgs::Pose2D::ConstPtr &msg);
   sensor_msgs::JointState getWholeBodyState();
 
   // Perception
   void addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name);
-//  void addCylinderCollObj(Eigen::Vector2d& size, Eigen::Vector3d& pos, std::string& obj_name);
+  void addCylinderCollObj();
   void removeCollisionObj(std::string& obj_name);
+  void addMeshCollObj(pcl_msgs::PolygonMesh& mesh, std::string& obj_name);
 
 private:
   ros::NodeHandle nh_;
@@ -147,6 +152,9 @@ private:
   double COLLISION_PENALTY;
   int COLLISION_COEFF;
   double MAX_FINGER_APERTURE;
+  int FRONT_TABLE = 0;
+  int LEFT_TABLE = 1;
+  int RIGHT_TABLE = 2;
 
 
 };

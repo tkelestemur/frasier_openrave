@@ -20,11 +20,102 @@ void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform&
     obj_body->InitFromGeometries(geoms);
 
     obj_body->SetTransform(hsr_pose * pose);
+    try {
+      std::cout << "RAVE: box collision " << obj_name <<  std::endl;
+      env_->Add(obj_body);
+    }
+    catch (const OpenRAVE::openrave_exception &or_except)
+    {
+      std::cout << "RAVE: Open rave exception "<< or_except.message() << std::endl;
+    }
 
-    env_->Add(obj_body);
+
 
 }
 
+void FRASIEROpenRAVE::addMeshCollObj(pcl_msgs::PolygonMesh &mesh, std::string& obj_name) {
+
+//  HACDInterface hi = HACDInterface();
+//  pcl::PolygonMesh triangles;
+//  pcl_conversions::toPCL(mesh, triangles);
+//  std::vector<pcl::PolygonMesh::Ptr> convex_hulls = hi.ConvexDecompHACD(triangles, 25);
+
+  OpenRAVE::TriMesh trimesh;
+//  int i = 0;
+//  for(const auto hull : convex_hulls){
+//    pcl::PointCloud<pcl::PointXYZ> mesh_cloud;
+//    pcl::fromPCLPointCloud2(hull->cloud, mesh_cloud);
+//    std::string body_name = obj_name + std::to_string(i);
+//    for(auto point : mesh_cloud.points){
+//      OpenRAVE::Vector p;
+//      p.x = point.x;
+//      p.y = point.y;
+//      p.z = point.z;
+//      p.w = 1;
+//
+//      trimesh.vertices.push_back(p);
+//    }
+//
+//    for(auto index : hull->polygons){
+//      trimesh.indices.push_back(index.vertices[0]);
+//      trimesh.indices.push_back(index.vertices[1]);
+//      trimesh.indices.push_back(index.vertices[2]);
+//    }
+//
+//    {
+//      OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+//      OpenRAVE::KinBodyPtr body = OpenRAVE::RaveCreateKinBody(env_);
+//      body->InitFromTrimesh(trimesh, true);
+//      body->SetName(body_name);
+//      try {
+//        std::cout << "adding mesh # of indicies: " << trimesh.vertices.size() <<  std::endl;
+//        env_->Add(body);
+//      }
+//      catch (const OpenRAVE::openrave_exception &or_except)
+//      {
+//        std::cout << "Caught: Open rave exception "<< or_except.message() << std::endl;
+//      }
+//    }
+//
+//    i++;
+//  }
+
+    pcl::PointCloud<pcl::PointXYZ> mesh_cloud;
+    pcl::fromROSMsg(mesh.cloud, mesh_cloud);
+
+    for(auto point : mesh_cloud.points){
+      OpenRAVE::Vector p;
+      p.x = point.x;
+      p.y = point.y;
+      p.z = point.z;
+      p.w = 1;
+
+      trimesh.vertices.push_back(p);
+    }
+
+    for(auto index : mesh.polygons){
+      trimesh.indices.push_back(index.vertices[0]);
+      trimesh.indices.push_back(index.vertices[1]);
+      trimesh.indices.push_back(index.vertices[2]);
+    }
+
+    {
+      OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+      OpenRAVE::KinBodyPtr body = OpenRAVE::RaveCreateKinBody(env_);
+      body->InitFromTrimesh(trimesh, true);
+      body->SetName(obj_name);
+      try {
+        std::cout << "adding mesh # of indicies: " << trimesh.vertices.size() <<  std::endl;
+        env_->Add(body);
+      }
+      catch (const OpenRAVE::openrave_exception &or_except)
+      {
+        std::cout << "Caught: Open rave exception "<< or_except.message() << std::endl;
+      }
+    }
+
+
+}
 
 
 void FRASIEROpenRAVE::removeCollisionObj(std::string& obj_name) {
@@ -46,3 +137,4 @@ void FRASIEROpenRAVE::removeTableObjects() {
 
   }
 }
+

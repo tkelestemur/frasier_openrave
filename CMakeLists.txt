@@ -11,9 +11,12 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   sensor_msgs
+  pcl_msgs
   roslib
   actionlib
   ecl_manipulators
+  hacd_interface
+  pcl_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -40,7 +43,7 @@ set(trajopt_LIBRARIES /home/tarik/develop/robotics/trajopt/build/lib/libjson.so 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES frasier_openrave frasier_openrave_controller
- CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs
+ CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs pcl_conversions hacd_interface
  # DEPENDS Eigen
 )
 

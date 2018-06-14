@@ -9,14 +9,19 @@ FRASIERController::FRASIERController(ros::NodeHandle n) : nh_(n),
                     gripper_pos_cli_("/hsrb/gripper_controller/follow_joint_trajectory", true),
                     gripper_cli_("/hsrb/gripper_controller/grasp", true){
 
-  arm_cli_.waitForServer(ros::Duration(3.0));
-  base_cli_.waitForServer(ros::Duration(3.0));
-  head_cli_.waitForServer(ros::Duration(3.0));
-  gripper_cli_.waitForServer(ros::Duration(3.0));
-  whole_body_cli_.waitForServer(ros::Duration(3.0));
+  bool arm_cli_running = arm_cli_.waitForServer(ros::Duration(3.0));
+  bool base_cli_running = base_cli_.waitForServer(ros::Duration(3.0));
+  bool head_cli_running = head_cli_.waitForServer(ros::Duration(3.0));
+  bool gripper_cli_running = gripper_cli_.waitForServer(ros::Duration(3.0));
+  bool wb_cli_running = whole_body_cli_.waitForServer(ros::Duration(3.0));
 
+  if(arm_cli_running && base_cli_running && head_cli_running &&
+     gripper_cli_running && wb_cli_running){
+    std::cout << "CONTROL: controller is initialized!" << std::endl;
+  }else{
+    std::cout << "CONTROL: controller is NOT initialized! RESTART THE ROBOT!" << std::endl;
+  }
 
-  std::cout << "CONTROL: controller is initialized!" << std::endl;
 
 }
 
@@ -187,7 +192,7 @@ void FRASIERController::moveToKnownState(MOVE_STATE state){
 
 }
 
-void FRASIERController::moveArmToKnownStatE(ARM_STATE state) {
+void FRASIERController::moveArmToKnownState(ARM_STATE state) {
   std::cout << "CONTROL: moving arm to known state... "  << std::endl;
 
   control_msgs::FollowJointTrajectoryGoal arm_goal;
@@ -200,9 +205,16 @@ void FRASIERController::moveArmToKnownStatE(ARM_STATE state) {
   arm_traj.joint_names.push_back("wrist_roll_joint");
 
   arm_traj.points.resize(1);
+  arm_traj.points[0].positions.resize(5);
+  if(state == ARM_STATE::GRASP_CONF){
+    arm_traj.points[0].positions[0] = 0.69;
+    arm_traj.points[0].positions[1] = -2.60;
+    arm_traj.points[0].positions[2] = 0.0;
+    arm_traj.points[0].positions[3] = -0.54;
+    arm_traj.points[0].positions[4] = 0.0;
+  }
 
-  if (state == ARM_STATE::GIVE) {
-
+  else if (state == ARM_STATE::GIVE_CONF) {
     arm_traj.points[0].positions[0] = 0.14;
     arm_traj.points[0].positions[1] = -0.47;
     arm_traj.points[0].positions[2] = 0.0;
@@ -210,7 +222,15 @@ void FRASIERController::moveArmToKnownStatE(ARM_STATE state) {
     arm_traj.points[0].positions[4] = 0.0;
   }
 
-  arm_traj.points[0].time_from_start = ros::Duration(5.0);
+  else if (state == ARM_STATE::GO_CONF) {
+    arm_traj.points[0].positions[0] = 0.0;
+    arm_traj.points[0].positions[1] = 0.0;
+    arm_traj.points[0].positions[2] = 0.0;
+    arm_traj.points[0].positions[3] = -M_PI/2;
+    arm_traj.points[0].positions[4] = 0.0;
+  }
+
+  arm_traj.points[0].time_from_start = ros::Duration(3.0);
 
   arm_goal.trajectory = arm_traj;
 
@@ -229,9 +249,19 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
 
   goal.trajectory.points.resize(1);
   goal.trajectory.points[0].positions.resize(2);
-  if (state == HEAD_STATE::LOOK_TABLE){
-    std::cout << "CONTROL: moving head towards table... "  << std::endl;
+  if (state == HEAD_STATE::LOOK_TABLE_LEFT){
+    std::cout << "CONTROL: moving head towards left table... "  << std::endl;
     goal.trajectory.points[0].positions[0] = M_PI/2;
+    goal.trajectory.points[0].positions[1] = -0.60;
+  }
+  else if(state == HEAD_STATE::LOOK_TABLE_RIGHT){
+    std::cout << "CONTROL: moving head towards right table... "  << std::endl;
+    goal.trajectory.points[0].positions[0] = -M_PI/2;
+    goal.trajectory.points[0].positions[1] = -0.60;
+  }
+  else if(state == HEAD_STATE::LOOK_TABLE_FRONT){
+    std::cout << "CONTROL: moving head towards front table... "  << std::endl;
+    goal.trajectory.points[0].positions[0] = 0.0;
     goal.trajectory.points[0].positions[1] = -0.60;
   }
   else if(state == HEAD_STATE::LOOK_SHELF){
