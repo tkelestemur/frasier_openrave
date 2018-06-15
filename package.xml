@@ -69,7 +69,7 @@
   <exec_depend>cmake_modules</exec_depend>
   <exec_depend>ecl_manipulators</exec_depend>
 
-  <depend>hacd_interface</depend>
+  <!--<depend>hacd_interface</depend>-->
   <depend>libpcl-all-dev</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_msgs</depend>

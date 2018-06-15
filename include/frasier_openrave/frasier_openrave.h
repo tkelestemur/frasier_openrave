@@ -25,7 +25,7 @@
 
 // Other
 #include <frasier_openrave/json.hpp>
-#include <HACD/hacdInterface.h>
+//#include <HACD/hacdInterface.h>
 #include <boost/thread/thread.hpp>
 #include <boost/bind.hpp>
 #include <json/json.h>
@@ -60,6 +60,7 @@ struct JointPosGoals{
 struct Grasp {
     std::string obj_name;
     OpenRAVE::Transform pose;
+    bool graspable;
 };
 
 
@@ -108,8 +109,8 @@ public:
 
   // Grasping
   std::vector<OpenRAVE::Transform> generatePlacePoses();
-  Grasp generateGraspPose();
-  Grasp generateGraspPose(int approach, std::string& obj_name);
+  Grasp generateGraspPose(int table_pose);
+  Grasp generateGraspPose(int table_pose, std::string& obj_name);
   OpenRAVE::Transform generatePlacePose(std::string& obj_name);
 
   // ROS

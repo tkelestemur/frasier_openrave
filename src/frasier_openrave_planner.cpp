@@ -555,7 +555,7 @@ void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
 }
 
 ////////////////////////////// GRASPING //////////////////////////////
-Grasp FRASIEROpenRAVE::generateGraspPose(int approach, std::string &obj_name) {
+Grasp FRASIEROpenRAVE::generateGraspPose(int table_pose, std::string &obj_name) {
   Grasp grasp;
   grasp.obj_name = obj_name;
 //  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
@@ -568,7 +568,7 @@ Grasp FRASIEROpenRAVE::generateGraspPose(int approach, std::string &obj_name) {
   OpenRAVE::Vector object_size = grasp_body->GetLink("base")->GetGeometry(0)->GetBoxExtents();
   OpenRAVE::Transform object_pose = grasp_body->GetTransform();
 
-  if(approach == FRONT_TABLE){
+  if(table_pose == FRONT_TABLE){
     std::cout << "RAVE: table is front!" << obj_name << std::endl;
     if(object_size[1]*2 < MAX_FINGER_APERTURE){
       std::cout << "RAVE: selected side grasp for " << obj_name << std::endl;
@@ -579,7 +579,7 @@ Grasp FRASIEROpenRAVE::generateGraspPose(int approach, std::string &obj_name) {
     }
     else if(object_size[1]*2 >= MAX_FINGER_APERTURE){
       std::cout << "RAVE: selected top grasp for " << obj_name << std::endl;
-      if(object_size[1]*2 < MAX_FINGER_APERTURE){
+      if(object_size[0]*2 < MAX_FINGER_APERTURE){
         grasp.pose.rot = FRONT_TOP_EEF_ROT;
         grasp.pose.trans.x = object_pose.trans.x;
         grasp.pose.trans.y = object_pose.trans.y;
@@ -587,7 +587,7 @@ Grasp FRASIEROpenRAVE::generateGraspPose(int approach, std::string &obj_name) {
       }
     }
   }
-  else if(approach == LEFT_TABLE){
+  else if(table_pose == LEFT_TABLE){
     std::cout << "RAVE: table is left!" << obj_name << std::endl;
     if(object_size[0]*2 < MAX_FINGER_APERTURE){
       std::cout << "RAVE: selected side grasp for " << obj_name << std::endl;
@@ -606,13 +606,13 @@ Grasp FRASIEROpenRAVE::generateGraspPose(int approach, std::string &obj_name) {
       }
     }
   }
-  else if(approach == RIGHT_TABLE){
+  else if(table_pose == RIGHT_TABLE){
     std::cout << "RAVE: table is right!" << obj_name << std::endl;
     if(object_size[0]*2 < MAX_FINGER_APERTURE){
       std::cout << "RAVE: selected side grasp for " << obj_name << std::endl;
       grasp.pose.rot = RIGHT_EEF_ROT;
       grasp.pose.trans.x = object_pose.trans.x;
-      grasp.pose.trans.y = object_pose.trans.y - 0.02;
+      grasp.pose.trans.y = object_pose.trans.y + 0.02;
       grasp.pose.trans.z = object_pose.trans.z;
     }
     else if(object_size[0]*2 >= MAX_FINGER_APERTURE){
@@ -653,56 +653,139 @@ OpenRAVE::Transform FRASIEROpenRAVE::generatePlacePose(std::string &obj_name) {
   return place_pose;
 }
 
-Grasp FRASIEROpenRAVE::generateGraspPose(){
+Grasp FRASIEROpenRAVE::generateGraspPose(int table_pose){
   OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
-
   Grasp grasp;
-  std::vector <OpenRAVE::KinBodyPtr> bodies;
-  OpenRAVE::KinBodyPtr grasp_body;
-  env_->GetBodies(bodies);
-  double closest_distance = std::numeric_limits<double>::max();
-  for (const auto body : bodies) {
-    std::string body_name = body->GetName();
+  while(true){
 
-    if (body_name.substr(0, 9) == "table_obj"){
+    std::vector <OpenRAVE::KinBodyPtr> bodies;
+    OpenRAVE::KinBodyPtr grasp_body;
+    env_->GetBodies(bodies);
+    double closest_distance = std::numeric_limits<double>::max();
+    for (const auto body : bodies) {
+      std::string body_name = body->GetName();
 
-      OpenRAVE::Transform obj_pose = hsr_pose.inverse() * body->GetTransform();
+      if (body_name.substr(0, 9) == "table_obj"){
 
-      double distance = std::sqrt(std::pow(obj_pose.trans.x, 2) + std::pow(obj_pose.trans.y, 2));
-      if (distance < closest_distance){
-        grasp_body = body;
-        closest_distance = distance;
+        OpenRAVE::Transform obj_pose = hsr_pose.inverse() * body->GetTransform();
 
+        double distance = std::sqrt(std::pow(obj_pose.trans.x, 2) + std::pow(obj_pose.trans.y, 2));
+        if (distance < closest_distance){
+          grasp_body = body;
+          closest_distance = distance;
+
+        }
+      }
+
+    }
+
+    grasp.obj_name = grasp_body->GetName();
+
+    OpenRAVE::Transform object_pose = grasp_body->GetTransform();
+    OpenRAVE::Vector object_size = grasp_body->GetLink("base")->GetGeometry(0)->GetBoxExtents();
+
+//  if(object_size[0]*2 < MAX_FINGER_APERTURE){
+//    std::cout << "RAVE: selected side grasp for " << grasp_body->GetName() << std::endl;
+//    grasp.pose.rot = LEFT_EEF_ROT;
+//    grasp.pose.trans.x = object_pose.trans.x;
+//    grasp.pose.trans.y = object_pose.trans.y - 0.02;
+//    grasp.pose.trans.z = object_pose.trans.z;
+//  }
+//  else if(object_size[0]*2 >= MAX_FINGER_APERTURE){
+//    if(object_size[1]*2 < MAX_FINGER_APERTURE){
+//      std::cout << "RAVE: selected top grasp for " << grasp_body->GetName() << std::endl;
+//      grasp.pose.rot = FRONT_TOP_EEF_ROT;
+//      grasp.pose.trans.x = object_pose.trans.x;
+//      grasp.pose.trans.y = object_pose.trans.y;
+//      grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+//    }
+//  }
+
+    if(table_pose == FRONT_TABLE){
+      std::cout << "RAVE: table is front!" << std::endl;
+      if(object_size[1]*2 < MAX_FINGER_APERTURE){
+        std::cout << "RAVE: selected side grasp for " << grasp.obj_name << std::endl;
+        grasp.pose.rot = FRONT_EEF_ROT;
+        grasp.pose.trans.x = object_pose.trans.x - 0.02;
+        grasp.pose.trans.y = object_pose.trans.y;
+        grasp.pose.trans.z = object_pose.trans.z;
+        grasp.graspable = true;
+      }
+      else if(object_size[1]*2 >= MAX_FINGER_APERTURE){
+        if(object_size[0]*2 < MAX_FINGER_APERTURE){
+          std::cout << "RAVE: selected top grasp for " << grasp.obj_name << std::endl;
+          grasp.pose.rot = FRONT_TOP_EEF_ROT;
+          grasp.pose.trans.x = object_pose.trans.x;
+          grasp.pose.trans.y = object_pose.trans.y;
+          grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+          grasp.graspable = true;
+        }
+      } else{
+        grasp.graspable = false;
       }
     }
-
-  }
-
-  OpenRAVE::Transform object_pose = grasp_body->GetTransform();
-  OpenRAVE::Vector object_size = grasp_body->GetLink("base")->GetGeometry(0)->GetBoxExtents();
-  std::cout << "GRASP OBJECT SIZE:  " << object_size << std::endl;
-
-  if(object_size[0]*2 < MAX_FINGER_APERTURE){
-    std::cout << "RAVE: selected side grasp for " << grasp_body->GetName() << std::endl;
-    grasp.pose.rot = LEFT_EEF_ROT;
-    grasp.pose.trans.x = object_pose.trans.x;
-    grasp.pose.trans.y = object_pose.trans.y - 0.02;
-    grasp.pose.trans.z = object_pose.trans.z;
-  }
-  else if(object_size[0]*2 >= MAX_FINGER_APERTURE){
-    if(object_size[1]*2 < MAX_FINGER_APERTURE){
-      std::cout << "RAVE: selected top grasp for " << grasp_body->GetName() << std::endl;
-      grasp.pose.rot = FRONT_TOP_EEF_ROT;
-      grasp.pose.trans.x = object_pose.trans.x;
-      grasp.pose.trans.y = object_pose.trans.y;
-      grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+    else if(table_pose == LEFT_TABLE){
+      std::cout << "RAVE: table is left!" << std::endl;
+      if(object_size[0]*2 < MAX_FINGER_APERTURE){
+        std::cout << "RAVE: selected side grasp for " << grasp.obj_name << std::endl;
+        grasp.pose.rot = LEFT_EEF_ROT;
+        grasp.pose.trans.x = object_pose.trans.x;
+        grasp.pose.trans.y = object_pose.trans.y - 0.02;
+        grasp.pose.trans.z = object_pose.trans.z;
+        grasp.graspable = true;
+      }
+      else if(object_size[0]*2 >= MAX_FINGER_APERTURE){
+        if(object_size[1]*2 < MAX_FINGER_APERTURE){
+          std::cout << "RAVE: selected top grasp for " << grasp.obj_name << std::endl;
+          grasp.pose.rot = FRONT_TOP_EEF_ROT;
+          grasp.pose.trans.x = object_pose.trans.x;
+          grasp.pose.trans.y = object_pose.trans.y;
+          grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+          grasp.graspable = true;
+        }
+      } else{
+        grasp.graspable = false;
+      }
     }
+    else if(table_pose == RIGHT_TABLE){
+      std::cout << "RAVE: table is right!"  << std::endl;
+      if(object_size[0]*2 < MAX_FINGER_APERTURE){
+        std::cout << "RAVE: selected side grasp for " << grasp.obj_name << std::endl;
+        grasp.pose.rot = RIGHT_EEF_ROT;
+        grasp.pose.trans.x = object_pose.trans.x;
+        grasp.pose.trans.y = object_pose.trans.y + 0.02;
+        grasp.pose.trans.z = object_pose.trans.z;
+        grasp.graspable = true;
+      }
+      else if(object_size[0]*2 >= MAX_FINGER_APERTURE){
+
+        if(object_size[1]*2 < MAX_FINGER_APERTURE){
+          std::cout << "RAVE: selected top grasp for " << grasp.obj_name << std::endl;
+          grasp.pose.rot = FRONT_TOP_EEF_ROT;
+          grasp.pose.trans.x = object_pose.trans.x;
+          grasp.pose.trans.y = object_pose.trans.y;
+          grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+          grasp.graspable = true;
+        }
+      } else{
+        grasp.graspable = false;
+      }
+    }
+    if(!grasp.graspable){
+      OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+      std:: string not_graspable_obj_name = "not_graspable_" + grasp.obj_name;
+      grasp_body->SetName(not_graspable_obj_name);
+      std::cout << "RAVE: object not graspable." << std::endl;
+      continue;
+    }
+    grasp.graspable = true;
+    break;
+
+  }
+  return grasp;
+
   }
 
-  grasp.obj_name = grasp_body->GetName();
-
-  return grasp;
-}
 
 std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
   OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();

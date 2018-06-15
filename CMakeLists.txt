@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   actionlib
   ecl_manipulators
-  hacd_interface
+#  hacd_interface
   pcl_conversions
 )
 
@@ -43,7 +43,7 @@ set(trajopt_LIBRARIES /home/tarik/develop/robotics/trajopt/build/lib/libjson.so 
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES frasier_openrave frasier_openrave_controller
- CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs pcl_conversions hacd_interface
+ CATKIN_DEPENDS geometry_msgs roscpp sensor_msgs pcl_conversions
  # DEPENDS Eigen
 )
 
