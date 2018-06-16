@@ -4,6 +4,16 @@ project(frasier_openrave)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11 -g -march=native -mno-avx)
 #set(CMAKE_CXX_FLAGS "-std=c++0x -g -march=native -mno-avx ${CMAKE_CXX_FLAGS}")
+
+# Use Trajopt directory for global installation
+set(TRAJOPT_DIR "$ENV{TRAJOPT_HOME}")
+
+if(TRAJOPT_DIR)            
+    message(STATUS "TRAJOPT_HOME at ${TRAJOPT_DIR}")
+else()
+    message(FATAL_ERROR "Undefined TRAJOPT_HOME env var.")
+endif()
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -24,9 +34,13 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenRAVE REQUIRED)
 find_package(Eigen3 REQUIRED)
 set(OpenRAVE_BOTH_LIBRARIES ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
-set(trajopt_LIBRARIES /home/tarik/develop/robotics/trajopt/build/lib/libjson.so /home/tarik/develop/robotics/trajopt/build/lib/libtrajopt.so
-/home/tarik/develop/robotics/trajopt/build/lib/libsco.so /home/tarik/develop/robotics/trajopt/build/lib/libutils.so
-/home/tarik/develop/robotics/trajopt/build/lib/libosgviewer.so)
+set(trajopt_LIBRARIES 
+	${TRAJOPT_DIR}/build/lib/libjson.so 
+	${TRAJOPT_DIR}/build/lib/libtrajopt.so
+	${TRAJOPT_DIR}/build/lib/libsco.so 
+	${TRAJOPT_DIR}/build/lib/libutils.so
+	${TRAJOPT_DIR}/build/lib/libosgviewer.so
+)
 
 
 
@@ -59,30 +73,41 @@ endif()
 ## Your package locations should be listed before other locations
 include_directories(
 	include
-    ${catkin_INCLUDE_DIRS}
+	${catkin_INCLUDE_DIRS}
 	SYSTEM
-    ${OpenRAVE_INCLUDE_DIRS}
+	${OpenRAVE_INCLUDE_DIRS}
 	${EIGEN3_INCLUDE_DIRS}
-    ${Boost_INCLUDE_DIRS}
-    ${OSG_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
+	${OSG_INCLUDE_DIRS}
 )
 
 include_directories(
-  /home/tarik/develop/robotics/trajopt/ext
-  /home/tarik/develop/robotics/trajopt/src
-  /home/tarik/develop/robotics/trajopt/ext/json/include
+	${TRAJOPT_DIR}/ext
+	${TRAJOPT_DIR}/src
+	${TRAJOPT_DIR}/ext/json/include
 )
 
 ### LIBRARIES ###
 
-set(FRASIER_OPENRAVE_SRC src/frasier_openrave.cpp src/frasier_openrave_planner.cpp src/fraiser_openrave_perception.cpp)
+set(FRASIER_OPENRAVE_SRC 
+	src/frasier_openrave.cpp 
+	src/frasier_openrave_planner.cpp 
+	src/fraiser_openrave_perception.cpp
+)
 
 add_library(${PROJECT_NAME} ${FRASIER_OPENRAVE_SRC})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenRAVE_BOTH_LIBRARIES} ${trajopt_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} 
+	${catkin_LIBRARIES} 
+	${Boost_LIBRARIES} 
+	${OpenRAVE_BOTH_LIBRARIES} 
+	${trajopt_LIBRARIES}
+)
 #set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-std=c++0x")
 #add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(${PROJECT_NAME}_controller src/frasier_openrave_controller.cpp)
+add_library(${PROJECT_NAME}_controller 
+	src/frasier_openrave_controller.cpp
+)
 target_link_libraries(${PROJECT_NAME}_controller ${catkin_LIBRARIES})
 #set_target_properties(frasier_controller PROPERTIES COMPILE_FLAGS "-std=c++0x")
 
@@ -102,51 +127,3 @@ target_link_libraries(${PROJECT_NAME}_controller ${catkin_LIBRARIES})
 
 # add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-
-#############
-## Install ##
-#############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark executables and/or libraries for installation
-# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_frasier_openrave.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
