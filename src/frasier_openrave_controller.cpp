@@ -267,7 +267,7 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
   else if(state == HEAD_STATE::LOOK_SHELF){
     std::cout << "CONTROL: moving head towards shelf... "  << std::endl;
     goal.trajectory.points[0].positions[0] = 0.0;
-    goal.trajectory.points[0].positions[1] = -0.45;
+    goal.trajectory.points[0].positions[1] = -0.65;
   }
 
 
