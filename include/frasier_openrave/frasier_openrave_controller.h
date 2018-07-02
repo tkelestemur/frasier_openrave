@@ -32,7 +32,8 @@ enum MOVE_STATE{
 enum ARM_STATE{
     GRASP_CONF,
     GIVE_CONF,
-    GO_CONF
+    GO_CONF,
+    DISH
 };
 
 enum HEAD_STATE{
