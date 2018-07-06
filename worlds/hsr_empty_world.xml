@@ -20,17 +20,17 @@
   </Robot>
 
 
-  <KinBody name="floor">
-    <Body type="static">
-      <Translation>0 0 0</Translation>
-      <Geom type="box">
-        <extents>10 10 0.001</extents>
-        <translation>0 0 -0.005</translation>
-        <diffuseColor>.6 .6 .6</diffuseColor>
-      	<ambientColor>0.6 0.6 0.6</ambientColor>
-      </Geom>
-    </Body>
-  </KinBody>
+  <!--<KinBody name="floor">-->
+    <!--<Body type="static">-->
+      <!--<Translation>0 0 0</Translation>-->
+      <!--<Geom type="box">-->
+        <!--<extents>10 10 0.001</extents>-->
+        <!--<translation>0 0 -0.005</translation>-->
+        <!--<diffuseColor>.6 .6 .6</diffuseColor>-->
+      	<!--<ambientColor>0.6 0.6 0.6</ambientColor>-->
+      <!--</Geom>-->
+    <!--</Body>-->
+  <!--</KinBody>-->
 
 
 </Environment>

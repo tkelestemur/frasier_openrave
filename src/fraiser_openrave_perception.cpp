@@ -2,34 +2,66 @@
 
 
 void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name) {
-    OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
 
-    OpenRAVE::KinBodyPtr obj_body = OpenRAVE::RaveCreateKinBody(env_);
-    obj_body->SetName(obj_name);
+  OpenRAVE::KinBodyPtr obj_body = OpenRAVE::RaveCreateKinBody(env_);
+  obj_body->SetName(obj_name);
 
-    OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
+  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
 
-    OpenRAVE::KinBody::GeometryInfo body;
-    body._bVisible = true;
-    body._type = OpenRAVE::GeometryType::GT_Box;
-    body._vGeomData = OpenRAVE::Vector(size[0]/2, size[1]/2, size[2]/2);
+  OpenRAVE::KinBody::GeometryInfo body;
+  body._bVisible = true;
+  body._type = OpenRAVE::GeometryType::GT_Box;
+  body._vGeomData = OpenRAVE::Vector(size[0]/2, size[1]/2, size[2]/2);
+  body._vDiffuseColor = OpenRAVE::Vector(0, 0, 1);
 
-    std::list<OpenRAVE::KinBody::GeometryInfo> geoms;
-    geoms.push_back(body);
+  std::list<OpenRAVE::KinBody::GeometryInfo> geoms;
+  geoms.push_back(body);
 
-    obj_body->InitFromGeometries(geoms);
+  obj_body->InitFromGeometries(geoms);
 
-    obj_body->SetTransform(hsr_pose * pose);
-    try {
-      std::cout << "RAVE: box collision " << obj_name <<  std::endl;
-      env_->Add(obj_body);
-    }
-    catch (const OpenRAVE::openrave_exception &or_except)
-    {
-      std::cout << "RAVE: Open rave exception "<< or_except.message() << std::endl;
-    }
+  obj_body->SetTransform(hsr_pose * pose);
+  try {
+    env_->Add(obj_body);
+    std::cout << "RAVE: added box collision object!" << obj_name <<  std::endl;
+  }
+  catch (const OpenRAVE::openrave_exception &or_except)
+  {
+    std::cout << "RAVE: Open rave exception "<< or_except.message() << std::endl;
+  }
 
 
+
+}
+
+void FRASIEROpenRAVE::addCylinderCollObj(OpenRAVE::Vector &size, OpenRAVE::Transform &pose, std::string &obj_name) {
+  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+
+  OpenRAVE::KinBodyPtr obj_body = OpenRAVE::RaveCreateKinBody(env_);
+  obj_body->SetName(obj_name);
+
+  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
+
+  OpenRAVE::KinBody::GeometryInfo body;
+  body._bVisible = true;
+  body._type = OpenRAVE::GeometryType::GT_Cylinder;
+  body._vGeomData = OpenRAVE::Vector(size[0]/2, size[1]/2, 0.0);
+  body._vDiffuseColor = OpenRAVE::Vector(1, 0, 0);
+
+  std::list<OpenRAVE::KinBody::GeometryInfo> geoms;
+  geoms.push_back(body);
+
+  obj_body->InitFromGeometries(geoms);
+
+  obj_body->SetTransform(hsr_pose * pose);
+  try {
+    env_->Add(obj_body);
+    std::cout << "RAVE: added cylinder collision object!" << obj_name <<  std::endl;
+  }
+  catch (const OpenRAVE::openrave_exception &or_except)
+  {
+    std::cout << "RAVE: Open rave exception "<< or_except.message() << std::endl;
+  }
 
 }
 
@@ -119,8 +151,8 @@ void FRASIEROpenRAVE::addMeshCollObj(pcl_msgs::PolygonMesh &mesh, std::string& o
 
 
 void FRASIEROpenRAVE::removeCollisionObj(std::string& obj_name) {
-    OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
-    bool result = env_->Remove(env_->GetKinBody(obj_name));
+  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+  bool result = env_->Remove(env_->GetKinBody(obj_name));
 }
 
 void FRASIEROpenRAVE::removeTableObjects() {
@@ -136,5 +168,13 @@ void FRASIEROpenRAVE::removeTableObjects() {
     }
 
   }
+}
+
+void FRASIEROpenRAVE::getObjectPose(OpenRAVE::Transform &pose, std::string &obj_name) {
+
+  OpenRAVE::KinBodyPtr body = env_->GetKinBody(obj_name);
+
+  pose = body->GetTransform();
+
 }
 

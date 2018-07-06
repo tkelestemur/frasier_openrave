@@ -73,8 +73,8 @@ public:
   // General
   bool loadHSR();
   bool loadCustomEnv(std::string& world_path);
-  void setViewer();
-  void updateJointStates();
+  void viewerThread();
+  void updateJointStatesThread();
   void updateCollisionEnv();
   void updatePlanningEnv();
   void getActiveJointIndex(std::vector<int>& q_index);
@@ -120,9 +120,10 @@ public:
 
   // Perception
   void addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name);
-  void addCylinderCollObj();
+  void addCylinderCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name);
   void removeCollisionObj(std::string& obj_name);
   void addMeshCollObj(pcl_msgs::PolygonMesh& mesh, std::string& obj_name);
+  void getObjectPose(OpenRAVE::Transform& pose, std::string& obj_name);
 
 private:
   ros::NodeHandle nh_;

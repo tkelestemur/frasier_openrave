@@ -91,7 +91,8 @@ include_directories(
 
 set(FRASIER_OPENRAVE_SRC 
 	src/frasier_openrave.cpp 
-	src/frasier_openrave_planner.cpp 
+	src/frasier_openrave_planner.cpp
+  src/frasier_openrave_grasp_planner.cpp
 	src/fraiser_openrave_perception.cpp
 )
 
@@ -113,9 +114,13 @@ target_link_libraries(${PROJECT_NAME}_controller ${catkin_LIBRARIES})
 
 ### EXECUTABLES ###
 
-#add_executable(test_planner nodes/frasier_openrave_test.cpp ${FRASIER_OPENRAVE_SRC})
-#target_link_libraries(test_planner ${catkin_LIBRARIES} ${Boost_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
-#set_target_properties(test_openrave PROPERTIES COMPILE_FLAGS "-std=c++0x")
+add_executable(test_openrave nodes/frasier_openrave_test.cpp src/frasier_openrave.cpp )
+target_link_libraries(test_openrave
+        ${catkin_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${OpenRAVE_BOTH_LIBRARIES}
+        ${trajopt_LIBRARIES})
+set_target_properties(test_openrave PROPERTIES COMPILE_FLAGS "-std=c++0x")
 
 #add_executable(test_controller nodes/frasier_controller_test.cpp src/frasier_controller.cpp ${FRASIER_OPENRAVE_SRC})
 #target_link_libraries(test_controller ${catkin_LIBRARIES} ${Boost_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
