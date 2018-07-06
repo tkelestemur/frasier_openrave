@@ -23,7 +23,7 @@ void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform&
   obj_body->SetTransform(hsr_pose * pose);
   try {
     env_->Add(obj_body);
-    std::cout << "RAVE: added box collision object!" << obj_name <<  std::endl;
+    std::cout << "RAVE: added box collision object : " << obj_name <<  std::endl;
   }
   catch (const OpenRAVE::openrave_exception &or_except)
   {

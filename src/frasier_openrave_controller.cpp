@@ -130,20 +130,16 @@ void FRASIERController::moveToKnownState(MOVE_STATE state){
       base_traj.points[0].positions[2] = 0.0;
   }
   else if (state == MOVE_STATE::PICK){
-    base_traj.points[0].positions[0] = 0.42;
-    base_traj.points[0].positions[1] = 0.08;
-    base_traj.points[0].positions[2] = 1.46;
+    base_traj.points[0].positions[0] = 0.0;
+    base_traj.points[0].positions[1] = 0.0;
+    base_traj.points[0].positions[2] = 0.0;
   }
   else if (state == MOVE_STATE::SHELF){
     base_traj.points[0].positions[0] = 0.0;
     base_traj.points[0].positions[1] = 0.0;
     base_traj.points[0].positions[2] = 0.0;
   }
-//  else if (state == MOVE_STATE::DISH){
-//    base_traj.points[0].positions[0] = 0.0;
-//    base_traj.points[0].positions[1] = 0.0;
-//    base_traj.points[0].positions[2] = 0.0;
-//  }
+
 
   base_traj.points[0].time_from_start = ros::Duration(5.0);
 
