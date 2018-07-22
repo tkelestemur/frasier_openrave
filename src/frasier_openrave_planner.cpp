@@ -77,7 +77,9 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
   trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plot);
-
+  for(int i = 0; i < result->cost_names.size(); i++){
+    std::cout << result->cost_names[i] << " : " << result->cost_vals[i] << std::endl;
+  }
   planning_env->Destroy();
   Eigen::MatrixXd traj = result->traj;
 
@@ -106,13 +108,16 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
   int n_steps = eef_goals.no_waypoints;
   int first_step = 0; int last_step = n_steps-1;
 
-  json opt_j, disc_coll_j, cont_coll_j, joint_vel_j, basic_info_j, init_info_j;
+  json opt_j, opt_costs_j, disc_coll_j, cont_coll_j, joint_vel_j, basic_info_j, init_info_j;
 
   OpenRAVE::Transform hsr_pose = hsr_->GetLink("base_link")->GetTransform();
   int n_joints = manip_->GetArmDOF();
 
-  std::vector<json> eef_pose_j;
-  eef_pose_j.resize(eef_goals.n_goals);
+//  std::vector<json> eef_pose_cost_j;
+//  json eef_pose_cost_j;
+  json eef_pose_const_j;
+//  std::vector<json> eef_pose_const_j;
+//  eef_pose_j.resize(eef_goals.n_goals);
 
 
   std::vector<double> joint_vel_coeffs(n_joints, 1.0);
@@ -122,6 +127,7 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
   basic_info_j = { {"n_steps", n_steps}, {"manip", "whole_body"}, {"start_fixed", true} };
 
   joint_vel_j = { {"type", "joint_vel"}, {"params", { {"coeffs", joint_vel_coeffs} } } };
+  opt_costs_j.push_back(joint_vel_j);
 
   disc_coll_j = { {"type", "collision"},
                   {"params", {
@@ -131,6 +137,7 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
                              {"first_step", first_step},
                              {"last_step", last_step} } }
   };
+  opt_costs_j.push_back(disc_coll_j);
 
   cont_coll_j = { {"type", "collision"},
                   {"params", {
@@ -140,7 +147,10 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
                              {"first_step", first_step},
                              {"last_step", last_step} } }
   };
+  opt_costs_j.push_back(cont_coll_j);
 
+
+//  json pose_j;
   for (int i = 0; i < eef_goals.n_goals; i++) {
     OpenRAVE::Transform eef_pose_goal = eef_goals.poses[i];
     OpenRAVE::Transform eef_goal;
@@ -149,11 +159,11 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
       eef_goal = eef_pose_goal;
     }
     else{
-      eef_goal = hsr_pose * eef_pose_goal; // trasform from robot fixed frame to world frame
+      // trasform from robot fixed frame to world frame
+      eef_goal = hsr_pose * eef_pose_goal;
     }
 
-
-    eef_pose_j[i] = { {"type", "pose"},
+    const json pose_j = { {"type", "pose"},
                       {"params", {
                                  {"xyz", {eef_goal.trans[0], eef_goal.trans[1], eef_goal.trans[2]}},
                                  {"wxyz", {eef_goal.rot[0], eef_goal.rot[1], eef_goal.rot[2], eef_goal.rot[3]}},
@@ -163,6 +173,22 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
     };
 
 
+    if(eef_goals.pose_types[i] == CONSTRAINT){
+//      eef_pose_cost_j.
+      eef_pose_const_j.push_back(pose_j);
+      std::cout << "RAVE: pose type: constraint" << std::endl;
+      std::cout << eef_pose_const_j.dump(4) << std::endl;
+    }
+
+    else if(eef_goals.pose_types[i] == COST){
+      opt_costs_j.push_back(pose_j);
+      std::cout << "RAVE: pose type: cost" << std::endl;
+//      std::cout << eef_pose_cost_j.dump(4) << std::endl;
+    }
+
+//    std::cout << eef_pose_const_j.dump(4) << std::endl;
+//    pose_j.clear();
+
   }
 
 
@@ -170,8 +196,9 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
   init_info_j = { {"type", "stationary"} };
 
   opt_j["basic_info"] = basic_info_j;
-  opt_j["costs"] = {joint_vel_j, disc_coll_j, cont_coll_j};
-  opt_j["constraints"] = eef_pose_j;
+//  opt_j["costs"] = {joint_vel_j, disc_coll_j, cont_coll_j, eef_pose_cost_j};
+  opt_j["costs"] = opt_costs_j;
+  opt_j["constraints"] = eef_pose_const_j;
   opt_j["init_info"] = init_info_j;
 
 
@@ -179,6 +206,7 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
   Json::Reader r;
 
   std::string opt_j_str = opt_j.dump();
+  std::cout << opt_j.dump(4) << std::endl;
 
   if (!r.parse(opt_j_str, v, false)) {
     std::cout << "can't read json!"  << std::endl;
@@ -531,20 +559,33 @@ geometry_msgs::Pose FRASIEROpenRAVE::orTransformToROSPose(OpenRAVE::Transform &t
 
 }
 
-void FRASIEROpenRAVE::drawTransform(OpenRAVE::Transform &T) {
+void FRASIEROpenRAVE::drawTransform(OpenRAVE::Transform &T, bool transparent) {
   OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
-  OpenRAVE::TransformMatrix M;
-  OpenRAVE::geometry::matrixFromQuat(M, T.rot);
+  OpenRAVE::TransformMatrix R;
+  OpenRAVE::geometry::matrixFromQuat(R, T.rot);
   double arrow_length = 0.1;
-  float arrow_width = 10.0;
+  float arrow_width = 0.005;
   OpenRAVE::Vector origin(T.trans);
-  OpenRAVE::Vector p2(T.trans[0]+0.2, T.trans[1]+0.2, T.trans[2]+0.2);
-  OpenRAVE::Vector x_axis(M.rot(0, 0), M.rot(1, 0), M.rot(2, 0));
-  std::cout << "origin: " << origin << std::endl;
-//  std::cout << "vector: " << arrow_length*origin+x_axis << std::endl;
-  std::cout << "vector: " << p2 << std::endl;
-  OpenRAVE::GraphHandlePtr arrow_x = env_->drawarrow(origin, p2, arrow_width, OpenRAVE::Vector(1, 0.5, 0.5, 1));
-  arrow_x->SetShow(true);
+
+  OpenRAVE::Vector x_axis = origin + arrow_length * OpenRAVE::Vector(R.m[0], R.m[4], R.m[8]);
+  OpenRAVE::Vector y_axis = origin + arrow_length * OpenRAVE::Vector(R.m[1], R.m[5], R.m[9]);
+  OpenRAVE::Vector z_axis = origin + arrow_length * OpenRAVE::Vector(R.m[2], R.m[6], R.m[10]);
+
+  OpenRAVE::Vector color_r, color_g, color_b;
+  if(transparent){
+    color_r = OpenRAVE::Vector(1, 0, 0, 0.3);
+    color_g = OpenRAVE::Vector(0, 1, 0, 0.3);
+    color_b = OpenRAVE::Vector(0, 0, 1, 0.3);
+  }
+  else{
+    color_r = OpenRAVE::Vector(1, 0, 0, 1);
+    color_g = OpenRAVE::Vector(0, 1, 0, 1);
+    color_b = OpenRAVE::Vector(0, 0, 1, 1);
+  }
+
+  graph_handles_.push_back(env_->drawarrow(origin, x_axis, arrow_width, color_r));
+  graph_handles_.push_back(env_->drawarrow(origin, y_axis, arrow_width, color_g));
+  graph_handles_.push_back(env_->drawarrow(origin, z_axis, arrow_width, color_b));
 }
 
 void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
@@ -553,6 +594,7 @@ void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
 
   for (int i = 0; i < traj.points.size(); i++) {
     hsr_->SetDOFValues(traj.points[i].positions, 1, q_index);
+    hsr_->SetDOFVelocities(traj.points[i].velocities, 1, q_index);
     ros::Duration(traj.points[1].time_from_start).sleep();
   }
 }

@@ -48,6 +48,7 @@ void FRASIEROpenRAVE::addCylinderCollObj(OpenRAVE::Vector &size, OpenRAVE::Trans
   body._vGeomData = OpenRAVE::Vector(size[0]/2, size[1]/2, 0.0);
   body._vDiffuseColor = OpenRAVE::Vector(1, 0, 0);
 
+
   std::list<OpenRAVE::KinBody::GeometryInfo> geoms;
   geoms.push_back(body);
 

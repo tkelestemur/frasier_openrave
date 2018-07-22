@@ -41,8 +41,8 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
   RIGHT_EEF_ROT = OpenRAVE::Vector(0.5, 0.5, -0.5, 0.5);
   FRONT_TOP_EEF_ROT = OpenRAVE::Vector(0.0, 1.0, 0.0, 0.0);
 
-  COLLISION_PENALTY = 0.060;
-  COLLISION_COEFF = 50;
+  COLLISION_PENALTY = 0.020;
+  COLLISION_COEFF = 20;
   MAX_FINGER_APERTURE = 0.120;
 
   bool load = loadHSR();

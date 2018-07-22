@@ -38,16 +38,27 @@
 
 using json = nlohmann::json;
 
+enum POSE_TYPE{
+    COST,
+    CONSTRAINT
+};
+
+
 struct EEFPoseGoals{
   int n_goals;
   int no_waypoints;
   std::vector<OpenRAVE::Transform> poses;
   std::vector<int> timesteps;
+  std::vector<POSE_TYPE> pose_types;
   double aperture;
   bool wrt_world;
   EEFPoseGoals(int n) : n_goals(n){
     poses.resize(n_goals);
     timesteps.resize(n_goals);
+//    pose_types.resize(n_goals);
+    for(int i = 0; i < n_goals; i++){
+      pose_types.push_back(CONSTRAINT);
+    }
   }
 };
 
@@ -102,7 +113,7 @@ public:
 
   //  Utilities
   void playTrajectory(trajectory_msgs::JointTrajectory& traj);
-  void drawTransform(OpenRAVE::Transform& T);
+  void drawTransform(OpenRAVE::Transform& T, bool transparent=false);
   trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
   geometry_msgs::Pose orTransformToROSPose(OpenRAVE::Transform& transform);
 
@@ -145,6 +156,7 @@ private:
   OpenRAVE::RobotBase::ManipulatorPtr manip_;
   OpenRAVE::PlannerBasePtr planner_;
   OpenRAVE::ControllerBasePtr controller_;
+  std::vector<OpenRAVE::GraphHandlePtr> graph_handles_;
 
   boost::thread viewer_thread_;
   boost::thread joint_state_thread_;
