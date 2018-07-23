@@ -2,6 +2,14 @@
 
 ////////////////////////////// GRASPING //////////////////////////////
 
+void FRASIEROpenRAVE::sampleGraspPoses(std::string &obj_name) {
+  OpenRAVE::KinBodyPtr obj_kinbody = env_->GetKinBody(obj_name);
+  if(obj_kinbody->GetLink("base")->GetGeometry(0)->GetType() == OpenRAVE::GeometryType::GT_Cylinder){
+    std::cout << "RAVE: sampling grasp poses for cylinder type object" << std::endl;
+  }
+}
+
+
 Grasp FRASIEROpenRAVE::generateGraspPose(int table_pose, std::string &obj_name) {
   Grasp grasp;
   grasp.obj_name = obj_name;

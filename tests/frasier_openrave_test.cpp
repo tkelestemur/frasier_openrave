@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
 
   FRASIEROpenRAVE rave(nh, true, false);
   ros::Duration(1.0).sleep();
-
+//  rave.getJacobian();
   ros::waitForShutdown();
   return 0;
 }

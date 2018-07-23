@@ -86,13 +86,10 @@ public:
   bool loadCustomEnv(std::string& world_path);
   void viewerThread();
   void updateJointStatesThread();
-  void updateCollisionEnv();
-  void updatePlanningEnv();
   void getActiveJointIndex(std::vector<int>& q_index);
   void getWholeBodyJointIndex(std::vector<int>& q_index);
   OpenRAVE::Transform getRobotTransform();
   geometry_msgs::Pose2D getRobotPose();
-  void startThreads();
 
 
   // Motion planning
@@ -106,19 +103,23 @@ public:
   void computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd& q_sol, bool check_coll=true);
   void grabObject(std::string& obj_name);
   void releaseObject(std::string& obj_name);
-  void removeTableObjects();
   void smoothTrajectory(trajectory_msgs::JointTrajectory& traj,
                         trajectory_msgs::JointTrajectory& traj_smoothed);
   void checkCollisions(trajectory_msgs::JointTrajectory& traj);
 
-  //  Utilities
+  // Kinetmatics
+  void getJacobian();
   void playTrajectory(trajectory_msgs::JointTrajectory& traj);
+  void moveToHomeState();
+  void setEEFValue(double& v);
+
+  //  Utilities
   void drawTransform(OpenRAVE::Transform& T, bool transparent=false);
   trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
   geometry_msgs::Pose orTransformToROSPose(OpenRAVE::Transform& transform);
 
-
   // Grasping
+  void sampleGraspPoses(std::string& obj_name);
   std::vector<OpenRAVE::Transform> generatePlacePoses();
   Grasp generateGraspPose(int table_pose);
   Grasp generateGraspPose(int table_pose, std::string& obj_name);
@@ -130,11 +131,14 @@ public:
   sensor_msgs::JointState getWholeBodyState();
 
   // Perception
-  void addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name);
-  void addCylinderCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name);
+  void addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose,
+                     std::string& obj_name, bool collision=true);
+  void addCylinderCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose,
+                          std::string& obj_name, bool collision=true);
   void removeCollisionObj(std::string& obj_name);
   void addMeshCollObj(pcl_msgs::PolygonMesh& mesh, std::string& obj_name);
   void getObjectPose(OpenRAVE::Transform& pose, std::string& obj_name);
+  void removeTableObjects();
 
 private:
   ros::NodeHandle nh_;
@@ -147,10 +151,11 @@ private:
   std::string package_path_, config_path_, worlds_path_;
   std::vector<std::string> joint_names_, base_names_, whole_body_joint_names_;
 
-  bool joint_state_flag_, run_viewer_flag_, run_joint_updater_flag_;
+  bool joint_state_flag_, base_state_flag_, run_viewer_flag_, run_joint_updater_flag_;
   bool plan_plotter_;
+  std::vector<int> whole_body_joint_index_, eef_joint_index_;
 
-  OpenRAVE::EnvironmentBasePtr env_, planning_env_;
+  OpenRAVE::EnvironmentBasePtr env_;
   OpenRAVE::ViewerBasePtr viewer_;
   OpenRAVE::RobotBasePtr hsr_;
   OpenRAVE::RobotBase::ManipulatorPtr manip_;

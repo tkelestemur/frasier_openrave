@@ -5,17 +5,26 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
                                                                                         run_viewer_flag_(run_viewer),
                                                                                         run_joint_updater_flag_(real_robot){
 
-  // ROS
-  joint_state_topic_ = "/hsrb/robot_state/joint_states";
-  base_state_topic_ = "/hsrb/pose2D";
 
-  joint_state_sub_ = nh_.subscribe(joint_state_topic_, 1, &FRASIEROpenRAVE::jointSensorCb, this);
-  base_state_sub_ = nh_.subscribe(base_state_topic_, 1, &FRASIEROpenRAVE::baseStateCb, this);
   robot_name_ = "hsrb";
 
   package_path_ = ros::package::getPath("frasier_openrave");
   worlds_path_ = package_path_ + "/worlds/";
   config_path_ = package_path_ +"/config/";
+
+  // ROS
+  if(real_robot){
+    joint_state_topic_ = "/hsrb/robot_state/joint_states";
+    base_state_topic_ = "/hsrb/pose2D";
+
+    joint_state_sub_ = nh_.subscribe(joint_state_topic_, 1, &FRASIEROpenRAVE::jointSensorCb, this);
+    base_state_sub_ = nh_.subscribe(base_state_topic_, 1, &FRASIEROpenRAVE::baseStateCb, this);
+    if(joint_state_sub_.getNumPublishers() == 0 || base_state_sub_.getNumPublishers() == 0){
+      std::cout << "RAVE: robot joint topics are not publsihed! Make sure robot is running!" << std::endl;
+      exit(1);
+    }
+
+  }
 
   // OpenRAVE
   OpenRAVE::RaveInitialize(true);
@@ -24,6 +33,7 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
   env_->SetDebugLevel(OpenRAVE::Level_Error);
 
   joint_state_flag_ = false;
+  base_state_flag_ = false;
   plan_plotter_ = false;
 
   base_link_ = "base_link";
@@ -34,6 +44,7 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
 
   whole_body_joint_names_ = {"base_x_joint", "base_y_joint", "base_t_joint", "arm_lift_joint", "arm_flex_joint",
                              "arm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"};
+
 
   FRONT_EEF_ROT = OpenRAVE::Vector(0.0, 0.707, 0.0, 0.707);
   BACK_EEF_ROT = OpenRAVE::Vector(0.707, 0.0, -0.707, 0.0);
@@ -48,15 +59,26 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
   bool load = loadHSR();
   assert(load);
 
-  std::cout << "RAVE: starting threads..." << std::endl;
+//  env_->SetPhysicsEngine(OpenRAVE::RaveCreatePhysicsEngine(env_, "ode"));
+//  env_->GetPhysicsEngine()->SetGravity(OpenRAVE::Vector(0, 0, 0));
 
   if (real_robot) {
+    std::cout << "RAVE: starting joint update thread..." << std::endl;
     joint_state_thread_ = boost::thread(boost::bind(&FRASIEROpenRAVE::updateJointStatesThread, this));
   }
 
   if (run_viewer) {
+    std::cout << "RAVE: starting viewer thread..." << std::endl;
     viewer_thread_ = boost::thread(boost::bind(&FRASIEROpenRAVE::viewerThread, this));
   }
+
+  eef_joint_index_.push_back(hsr_->GetJoint("hand_motor_joint")->GetDOFIndex());
+  for (int i = 0; i < whole_body_joint_names_.size(); i++) {
+    whole_body_joint_index_.push_back(hsr_->GetJoint(whole_body_joint_names_[i])->GetDOFIndex());
+  }
+
+  double open_hand = 1.0;
+  setEEFValue(open_hand);
 
 }
 
@@ -86,11 +108,10 @@ void FRASIEROpenRAVE::jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg
 void FRASIEROpenRAVE::baseStateCb(const geometry_msgs::Pose2D::ConstPtr &msg){
   boost::mutex::scoped_lock lock(base_state_mutex_);
   base_ = *msg;
-
-
+  base_state_flag_ = true;
 }
 
-sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() { //TODO: Try without base_roll_joint
+sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() {
 
   sensor_msgs::JointState state;
 
@@ -102,7 +123,6 @@ sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() { //TODO: Try witho
   state.name.push_back("arm_roll_joint");
   state.name.push_back("wrist_flex_joint");
   state.name.push_back("wrist_roll_joint");
-  state.name.push_back("base_roll_joint");
 
 
   state.position.push_back(base_.x);
@@ -113,7 +133,6 @@ sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() { //TODO: Try witho
   state.position.push_back(joints_.position[14]);
   state.position.push_back(joints_.position[15]);
   state.position.push_back(joints_.position[16]);
-  state.position.push_back(joints_.position[0]); // /filter_hsrb_trajectory srv needs base_roll_joint
 
   return state;
 }
@@ -146,16 +165,9 @@ bool FRASIEROpenRAVE::loadCustomEnv(std::string& world_path) {
     std::cout << "RAVE: custom world initialized!" << std::endl;
   }
 
-
+  return success;
 }
 
-void FRASIEROpenRAVE::updatePlanningEnv() {
-  std::vector<double> q;
-  hsr_->GetActiveDOFValues(q);
-
-  planning_env_->GetRobot(robot_name_)->SetJointValues(q);
-
-}
 
 
 void FRASIEROpenRAVE::viewerThread(){
@@ -212,7 +224,7 @@ void FRASIEROpenRAVE::updateJointStatesThread(){
 
   while (ros::ok()) {
 
-    if (joint_state_flag_) {
+    if (joint_state_flag_ && base_state_flag_) {
 
       {
         boost::mutex::scoped_lock lock(joint_state_mutex_);
@@ -243,7 +255,7 @@ void FRASIEROpenRAVE::updateJointStatesThread(){
           // q[q_index[0]] = base_.x;
           // q[q_index[1]] = base_.y;
           // q[q_index[2]] = base_.theta;
-          //
+
           q_v[q_index[3]] = joints_.velocity[12];
           q_v[q_index[4]] = joints_.velocity[13];
           q_v[q_index[5]] = joints_.velocity[14];
@@ -270,14 +282,26 @@ void FRASIEROpenRAVE::updateJointStatesThread(){
 
 }
 
-void FRASIEROpenRAVE::startThreads(/* arguments */) { // TODO: Fix threading
-  std::cout << "RAVE: starting threads..." << std::endl;
+void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
 
-//  if (real_robot) {
-//    joint_state_thread_ = boost::thread(boost::bind(&FRASIEROpenRAVE::updateJointStatesThread, this));
-//  }
-//
-//  if (run_viewer) {
-//    viewer_thread_ = boost::thread(boost::bind(&FRASIEROpenRAVE::viewerThread, this));
-//  }
+  for (int i = 0; i < traj.points.size(); i++) {
+    hsr_->SetDOFValues(traj.points[i].positions, 1, whole_body_joint_index_);
+    hsr_->SetDOFVelocities(traj.points[i].velocities, 1, whole_body_joint_index_);
+    ros::Duration(traj.points[1].time_from_start).sleep();
+  }
+
 }
+
+void FRASIEROpenRAVE::moveToHomeState() {
+
+  std::vector<double> q_home = {0, 0, 0, 0, 0, 0, 0, 0};
+  hsr_->SetDOFValues(q_home, 1, whole_body_joint_index_);
+
+}
+
+void FRASIEROpenRAVE::setEEFValue(double &v) {
+  std::vector<double> q;
+  q.push_back(v);
+  hsr_->SetDOFValues(q, 1, eef_joint_index_);
+}
+

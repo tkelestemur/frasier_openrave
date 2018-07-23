@@ -1,7 +1,9 @@
 #include <frasier_openrave/frasier_openrave.h>
 
 
-void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose, std::string& obj_name) {
+void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform& pose,
+                                    std::string& obj_name, bool collision) {
+
   OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
 
   OpenRAVE::KinBodyPtr obj_body = OpenRAVE::RaveCreateKinBody(env_);
@@ -19,22 +21,27 @@ void FRASIEROpenRAVE::addBoxCollObj(OpenRAVE::Vector& size, OpenRAVE::Transform&
   geoms.push_back(body);
 
   obj_body->InitFromGeometries(geoms);
-
   obj_body->SetTransform(hsr_pose * pose);
+
+  if(!collision)
+    obj_body->Enable(false);
+
   try {
     env_->Add(obj_body);
-    std::cout << "RAVE: added box collision object : " << obj_name <<  std::endl;
+    std::cout << "RAVE: added box collision object!" << std::endl;
   }
   catch (const OpenRAVE::openrave_exception &or_except)
   {
-    std::cout << "RAVE: Open rave exception "<< or_except.message() << std::endl;
+    std::cout << "RAVE: exception : "<< or_except.message() << std::endl;
   }
 
 
 
 }
 
-void FRASIEROpenRAVE::addCylinderCollObj(OpenRAVE::Vector &size, OpenRAVE::Transform &pose, std::string &obj_name) {
+void FRASIEROpenRAVE::addCylinderCollObj(OpenRAVE::Vector &size, OpenRAVE::Transform &pose,
+                                         std::string &obj_name, bool collision) {
+
   OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
 
   OpenRAVE::KinBodyPtr obj_body = OpenRAVE::RaveCreateKinBody(env_);
@@ -49,19 +56,23 @@ void FRASIEROpenRAVE::addCylinderCollObj(OpenRAVE::Vector &size, OpenRAVE::Trans
   body._vDiffuseColor = OpenRAVE::Vector(1, 0, 0);
 
 
+
   std::list<OpenRAVE::KinBody::GeometryInfo> geoms;
   geoms.push_back(body);
 
   obj_body->InitFromGeometries(geoms);
-
   obj_body->SetTransform(hsr_pose * pose);
+
+  if(!collision)
+    obj_body->Enable(false);
+
   try {
     env_->Add(obj_body);
-    std::cout << "RAVE: added cylinder collision object!" << obj_name <<  std::endl;
+    std::cout << "RAVE: added cylinder collision object!" <<  std::endl;
   }
   catch (const OpenRAVE::openrave_exception &or_except)
   {
-    std::cout << "RAVE: Open rave exception "<< or_except.message() << std::endl;
+    std::cout << "RAVE: exception : "<< or_except.message() << std::endl;
   }
 
 }

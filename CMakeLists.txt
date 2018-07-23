@@ -114,19 +114,27 @@ target_link_libraries(${PROJECT_NAME}_controller ${catkin_LIBRARIES})
 
 ### EXECUTABLES ###
 
-add_executable(test_openrave nodes/frasier_openrave_test.cpp src/frasier_openrave.cpp )
-target_link_libraries(test_openrave
-        ${catkin_LIBRARIES}
-        ${Boost_LIBRARIES}
-        ${OpenRAVE_BOTH_LIBRARIES}
-        ${trajopt_LIBRARIES})
-set_target_properties(test_openrave PROPERTIES COMPILE_FLAGS "-std=c++0x")
+#add_executable(test_openrave tests/frasier_openrave_test.cpp src/frasier_openrave.cpp)
+#target_link_libraries(test_openrave
+#        ${catkin_LIBRARIES}
+#        ${Boost_LIBRARIES}
+#        ${OpenRAVE_BOTH_LIBRARIES}
+#        ${trajopt_LIBRARIES})
+#set_target_properties(test_openrave PROPERTIES COMPILE_FLAGS "-std=c++0x")
+#
+#add_executable(test_grasp_planner tests/frasier_grasp_planner_test.cpp src/frasier_openrave.cpp)
+#target_link_libraries(test_grasp_planner
+#        ${catkin_LIBRARIES}
+#        ${Boost_LIBRARIES}
+#        ${OpenRAVE_BOTH_LIBRARIES}
+#        ${trajopt_LIBRARIES})
+#set_target_properties(test_grasp_planner PROPERTIES COMPILE_FLAGS "-std=c++0x")
 
-#add_executable(test_controller nodes/frasier_controller_test.cpp src/frasier_controller.cpp ${FRASIER_OPENRAVE_SRC})
+#add_executable(test_controller tests/frasier_controller_test.cpp src/frasier_controller.cpp ${FRASIER_OPENRAVE_SRC})
 #target_link_libraries(test_controller ${catkin_LIBRARIES} ${Boost_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
 #set_target_properties(test_controller PROPERTIES COMPILE_FLAGS "-std=c++0x")
 
-#add_executable(test_perception nodes/frasier_perception_test.cpp ${FRASIER_OPENRAVE_SRC})
+#add_executable(test_perception tests/frasier_perception_test.cpp ${FRASIER_OPENRAVE_SRC})
 #target_link_libraries(test_perception ${catkin_LIBRARIES} ${Boost_LIBRARIES} frasier_openrave ${OpenRAVE_BOTH_LIBRARIES})
 #set_target_properties(test_perception PROPERTIES COMPILE_FLAGS "-std=c++0x")
 

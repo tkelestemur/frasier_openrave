@@ -68,34 +68,41 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(JointPosGoal
   return eigenMatrixToTraj(traj);
 
 }
-//TODO: Should I set active dofs???
+
 trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals& eef_goals, bool plot){
   std::cout << "RAVE: planning trajectory..." << std::endl;
   OpenRAVE::EnvironmentBasePtr planning_env = env_->CloneSelf(OpenRAVE::Clone_Bodies);
+
+  std::vector<OpenRAVE::KinBodyPtr> bodies;
+  planning_env->GetBodies(bodies);
+
+  // disabled links needs to be removed from the env because trajopt doesn't check it
+  for(const auto body : bodies){
+    if(!body->IsEnabled()){
+      planning_env->Remove(body);
+    }
+  }
 
   Json::Value opt_j = createJsonValueTraj(eef_goals);
 
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
   trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plot);
-  for(int i = 0; i < result->cost_names.size(); i++){
-    std::cout << result->cost_names[i] << " : " << result->cost_vals[i] << std::endl;
-  }
+//  for(int i = 0; i < result->cost_names.size(); i++){
+//    std::cout << result->cost_names[i] << " : " << result->cost_vals[i] << std::endl;
+//  }
   planning_env->Destroy();
   Eigen::MatrixXd traj = result->traj;
-
   return eigenMatrixToTraj(traj);
 
 }
 
-// TODO: create planning env and destroy it insetad of updating planning_env_
 void FRASIEROpenRAVE::computeIK(OpenRAVE::Transform& eef_pose, Eigen::VectorXd&  q_sol, bool check_coll){
   std::cout << "RAVE: computing IK..." << std::endl;
 
   Json::Value opt_j = createJsonValueIK(eef_pose, check_coll);
+  OpenRAVE::EnvironmentBasePtr planning_env = env_->CloneSelf(OpenRAVE::Clone_Bodies);
 
-  updatePlanningEnv();
-
-  trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env_);
+  trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
   trajopt::TrajOptResultPtr traj_result = trajopt::OptimizeProblem(traj_prob, plan_plotter_);
   trajopt::ConstraintPtr ineq;
   
@@ -177,7 +184,7 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
 //      eef_pose_cost_j.
       eef_pose_const_j.push_back(pose_j);
       std::cout << "RAVE: pose type: constraint" << std::endl;
-      std::cout << eef_pose_const_j.dump(4) << std::endl;
+//      std::cout << eef_pose_const_j.dump(4) << std::endl;
     }
 
     else if(eef_goals.pose_types[i] == COST){
@@ -206,7 +213,7 @@ Json::Value FRASIEROpenRAVE::createJsonValueTraj(EEFPoseGoals& eef_goals){
   Json::Reader r;
 
   std::string opt_j_str = opt_j.dump();
-  std::cout << opt_j.dump(4) << std::endl;
+//  std::cout << opt_j.dump(4) << std::endl;
 
   if (!r.parse(opt_j_str, v, false)) {
     std::cout << "can't read json!"  << std::endl;
@@ -494,6 +501,24 @@ void FRASIEROpenRAVE::checkCollisions(trajectory_msgs::JointTrajectory& traj) {
 
 }
 
+void FRASIEROpenRAVE::getJacobian() {
+//  boost::multi_array<double, 2> jac;
+//  OpenRAVE::Vector offset;
+//  std::vector<double> jac_;
+//  manip_->CalculateJacobian(jac_);
+//  int eef_index = hsr_->GetActiveManipulator()->GetEndEffector()->GetIndex();
+//  hsr_->SetActiveDOFs()
+//  hsr_->CalculateActiveJacobian(eef_index, offset, jac);
+//
+//  for(auto j : jac_){
+//    std::cout << j << std::endl;
+//  }
+
+//  std::cout << "jac size: " << jac.size() << std::endl;
+//  std::cout << "jac shape: " << jac.shape()[2] << std::endl;
+
+}
+
 
 void FRASIEROpenRAVE::grabObject(std::string& obj_name) {
   OpenRAVE::KinBodyPtr grabbed_object = env_->GetKinBody(obj_name);
@@ -588,14 +613,5 @@ void FRASIEROpenRAVE::drawTransform(OpenRAVE::Transform &T, bool transparent) {
   graph_handles_.push_back(env_->drawarrow(origin, z_axis, arrow_width, color_b));
 }
 
-void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
-  std::vector<int> q_index;
-  getWholeBodyJointIndex(q_index);
 
-  for (int i = 0; i < traj.points.size(); i++) {
-    hsr_->SetDOFValues(traj.points[i].positions, 1, q_index);
-    hsr_->SetDOFVelocities(traj.points[i].velocities, 1, q_index);
-    ros::Duration(traj.points[1].time_from_start).sleep();
-  }
-}
 
