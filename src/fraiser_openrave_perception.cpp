@@ -54,7 +54,7 @@ void FRASIEROpenRAVE::addCylinderCollObj(OpenRAVE::Vector &size, OpenRAVE::Trans
   body._type = OpenRAVE::GeometryType::GT_Cylinder;
   body._vGeomData = OpenRAVE::Vector(size[0]/2, size[1]/2, 0.0);
   body._vDiffuseColor = OpenRAVE::Vector(1, 0, 0);
-
+  body._fTransparency = 0.2;
 
 
   std::list<OpenRAVE::KinBody::GeometryInfo> geoms;
@@ -189,4 +189,18 @@ void FRASIEROpenRAVE::getObjectPose(OpenRAVE::Transform &pose, std::string &obj_
   pose = body->GetTransform();
 
 }
+
+void FRASIEROpenRAVE::grabObject(std::string& obj_name) {
+  OpenRAVE::KinBodyPtr grabbed_object = env_->GetKinBody(obj_name);
+  hsr_->Grab(grabbed_object);
+}
+
+void FRASIEROpenRAVE::releaseObject(std::string& obj_name) {
+  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
+  OpenRAVE::KinBodyPtr released_object = env_->GetKinBody(obj_name);
+  hsr_->Release(released_object);
+  std::string new_name = "released" + obj_name;
+  released_object->SetName(new_name);
+}
+
 

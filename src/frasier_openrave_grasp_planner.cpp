@@ -4,9 +4,49 @@
 
 void FRASIEROpenRAVE::sampleGraspPoses(std::string &obj_name) {
   OpenRAVE::KinBodyPtr obj_kinbody = env_->GetKinBody(obj_name);
-  if(obj_kinbody->GetLink("base")->GetGeometry(0)->GetType() == OpenRAVE::GeometryType::GT_Cylinder){
+  OpenRAVE::Transform obj_pose = obj_kinbody->GetTransform();
+  OpenRAVE::KinBody::Link::GeometryPtr obj_geom = obj_kinbody->GetLink("base")->GetGeometry(0);
+//  drawTransform(obj_pose);
+
+  if(obj_geom->GetType() == OpenRAVE::GeometryType::GT_Cylinder){
     std::cout << "RAVE: sampling grasp poses for cylinder type object" << std::endl;
+
+    double H = obj_geom->GetCylinderHeight();
+    double h = H/10.0;
+    double h_bottom = obj_pose.trans.z - H/2 + h;
+    double R = obj_geom->GetCylinderRadius();
+    double R_grasp = R + 0.02;
+
+    double n = 10.0;
+    double angle_step = 2 * M_PI / n;
+
+    std::vector<OpenRAVE::Vector> grasp_points;
+    for(int i = 0; i < 10; i++){
+      OpenRAVE::Vector object_center(obj_pose.trans.x, obj_pose.trans.y, (h_bottom + h * i));
+//      drawPoint(object_center);
+      for (int j = 0; j < 10 ; j++) {
+        OpenRAVE::Vector grasp_point(obj_pose.trans.x + R_grasp * std::cos(angle_step * j),
+                                     obj_pose.trans.y + R_grasp * std::sin(angle_step * j),
+                                     object_center.z);
+
+        OpenRAVE::Vector grasp_vector = object_center - grasp_point;
+        grasp_vector = grasp_vector.normalize();
+//        drawPoint(grasp_point);
+        drawArrow(grasp_point, grasp_vector);
+
+      }
+
+    }
+
   }
+}
+
+void FRASIEROpenRAVE::generateEEFCurve() {
+  ecl::Array<double> x_set(3);
+  ecl::Array<double> eef_curve(3);
+
+  x_set << 0.0, 1.0, 2.0;
+  ecl::CubicSpline curve = ecl::CubicSpline::Natural(x_set, eef_curve);
 }
 
 
@@ -267,7 +307,6 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
 
   }
 
-
   for (auto pose : mid_place_poses) {
     place_poses.push_back(pose);
   }
@@ -279,7 +318,6 @@ std::vector<OpenRAVE::Transform> FRASIEROpenRAVE::generatePlacePoses(){
   for (auto pose : right_place_poses) {
     place_poses.push_back(pose);
   }
-
 
   return place_poses;
 }

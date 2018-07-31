@@ -13,6 +13,7 @@
 #include <ecl/exceptions/standard_exception.hpp>
 #include <ecl/manipulators.hpp>
 #include <ecl/exceptions.hpp>
+#include <ecl/geometry.hpp>
 
 // OpenRAVE+TrajOpt
 #include <openrave-0.9/openrave-core.h>
@@ -27,6 +28,7 @@
 #include <frasier_openrave/json.hpp>
 //#include <HACD/hacdInterface.h>
 #include <boost/thread/thread.hpp>
+#include <boost/date_time.hpp>
 #include <boost/bind.hpp>
 #include <json/json.h>
 #include <Eigen/Core>
@@ -115,11 +117,15 @@ public:
 
   //  Utilities
   void drawTransform(OpenRAVE::Transform& T, bool transparent=false);
+  void drawArrow(OpenRAVE::Vector& origin, OpenRAVE::Vector& vector, bool transparent=false);
+  void drawPoints(std::vector<OpenRAVE::Vector> &points);
+  void drawPoint(OpenRAVE::Vector &point);
   trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd& traj);
   geometry_msgs::Pose orTransformToROSPose(OpenRAVE::Transform& transform);
 
   // Grasping
   void sampleGraspPoses(std::string& obj_name);
+  void generateEEFCurve();
   std::vector<OpenRAVE::Transform> generatePlacePoses();
   Grasp generateGraspPose(int table_pose);
   Grasp generateGraspPose(int table_pose, std::string& obj_name);

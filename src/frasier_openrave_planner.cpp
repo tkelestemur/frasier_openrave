@@ -85,11 +85,23 @@ trajectory_msgs::JointTrajectory FRASIEROpenRAVE::computeTrajectory(EEFPoseGoals
 
   Json::Value opt_j = createJsonValueTraj(eef_goals);
 
+  boost::posix_time::ptime start_time;
+  boost::posix_time::time_duration diff;
+  start_time = boost::posix_time::microsec_clock::local_time();
+
   trajopt::TrajOptProbPtr traj_prob = trajopt::ConstructProblem(opt_j, planning_env);
   trajopt::TrajOptResultPtr result = trajopt::OptimizeProblem(traj_prob, plot);
+
+  diff = boost::posix_time::microsec_clock::local_time() - start_time;
+  double elapsed = diff.total_nanoseconds() /1e9;
+
+  std::cout << "RAVE: trajectory optimized in " << elapsed << " seconds!" << std::endl;
+
 //  for(int i = 0; i < result->cost_names.size(); i++){
 //    std::cout << result->cost_names[i] << " : " << result->cost_vals[i] << std::endl;
 //  }
+
+
   planning_env->Destroy();
   Eigen::MatrixXd traj = result->traj;
   return eigenMatrixToTraj(traj);
@@ -432,7 +444,7 @@ void FRASIEROpenRAVE::smoothTrajectory(trajectory_msgs::JointTrajectory &traj,
                                          trajectory_msgs::JointTrajectory &traj_smoothed) {
 
   int no_dof = manip_->GetArmDOF();;
-  int no_waypoints = traj.points.size();
+  int no_waypoints = static_cast<int>(traj.points.size());
   ecl::Trajectory<ecl::JointAngles> ecl_traj(no_dof);
   ecl::WayPoint<ecl::JointAngles> waypoint(no_dof);
   ecl::Array<double> acc_limits(no_dof);
@@ -518,100 +530,3 @@ void FRASIEROpenRAVE::getJacobian() {
 //  std::cout << "jac shape: " << jac.shape()[2] << std::endl;
 
 }
-
-
-void FRASIEROpenRAVE::grabObject(std::string& obj_name) {
-  OpenRAVE::KinBodyPtr grabbed_object = env_->GetKinBody(obj_name);
-  hsr_->Grab(grabbed_object);
-}
-
-void FRASIEROpenRAVE::releaseObject(std::string& obj_name) {
-  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
-  OpenRAVE::KinBodyPtr released_object = env_->GetKinBody(obj_name);
-  hsr_->Release(released_object);
-  std::string new_name = "released" + obj_name;
-  released_object->SetName(new_name);
-}
-
-
-////////////////////////////// UTILITIES //////////////////////////////
-trajectory_msgs::JointTrajectory FRASIEROpenRAVE::eigenMatrixToTraj(Eigen::MatrixXd &traj) {
-
-  int n_joints = manip_->GetArmDOF();
-
-  trajectory_msgs::JointTrajectory traj_ros;
-
-  traj_ros.joint_names.push_back("odom_x");
-  traj_ros.joint_names.push_back("odom_y");
-  traj_ros.joint_names.push_back("odom_t");
-  traj_ros.joint_names.push_back("arm_lift_joint");
-  traj_ros.joint_names.push_back("arm_flex_joint");
-  traj_ros.joint_names.push_back("arm_roll_joint");
-  traj_ros.joint_names.push_back("wrist_flex_joint");
-  traj_ros.joint_names.push_back("wrist_roll_joint");
-
-
-  traj_ros.points.resize(traj.rows());
-
-  for (int i = 0; i < traj.rows(); i++) {
-    traj_ros.points[i].positions.resize(n_joints);
-    traj_ros.points[i].velocities.resize(n_joints);
-    traj_ros.points[i].accelerations.resize(n_joints);
-
-    for (int j = 0; j < n_joints; j++) {
-      traj_ros.points[i].positions[j] = traj(i, j);
-      traj_ros.points[i].velocities[j] = 0.0;
-      traj_ros.points[i].accelerations[j] = 0.0;
-
-    }
-  }
-
-  return traj_ros;
-}
-
-geometry_msgs::Pose FRASIEROpenRAVE::orTransformToROSPose(OpenRAVE::Transform &transform) {
-  geometry_msgs::Pose pose;
-  pose.position.x = transform.trans.x;
-  pose.position.y = transform.trans.y;
-  pose.position.z = transform.trans.z;
-
-  pose.orientation.w = transform.rot[0];
-  pose.orientation.x = transform.rot[1];
-  pose.orientation.y = transform.rot[2];
-  pose.orientation.z = transform.rot[3];
-
-  return pose;
-
-}
-
-void FRASIEROpenRAVE::drawTransform(OpenRAVE::Transform &T, bool transparent) {
-  OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
-  OpenRAVE::TransformMatrix R;
-  OpenRAVE::geometry::matrixFromQuat(R, T.rot);
-  double arrow_length = 0.1;
-  float arrow_width = 0.005;
-  OpenRAVE::Vector origin(T.trans);
-
-  OpenRAVE::Vector x_axis = origin + arrow_length * OpenRAVE::Vector(R.m[0], R.m[4], R.m[8]);
-  OpenRAVE::Vector y_axis = origin + arrow_length * OpenRAVE::Vector(R.m[1], R.m[5], R.m[9]);
-  OpenRAVE::Vector z_axis = origin + arrow_length * OpenRAVE::Vector(R.m[2], R.m[6], R.m[10]);
-
-  OpenRAVE::Vector color_r, color_g, color_b;
-  if(transparent){
-    color_r = OpenRAVE::Vector(1, 0, 0, 0.3);
-    color_g = OpenRAVE::Vector(0, 1, 0, 0.3);
-    color_b = OpenRAVE::Vector(0, 0, 1, 0.3);
-  }
-  else{
-    color_r = OpenRAVE::Vector(1, 0, 0, 1);
-    color_g = OpenRAVE::Vector(0, 1, 0, 1);
-    color_b = OpenRAVE::Vector(0, 0, 1, 1);
-  }
-
-  graph_handles_.push_back(env_->drawarrow(origin, x_axis, arrow_width, color_r));
-  graph_handles_.push_back(env_->drawarrow(origin, y_axis, arrow_width, color_g));
-  graph_handles_.push_back(env_->drawarrow(origin, z_axis, arrow_width, color_b));
-}
-
-
-

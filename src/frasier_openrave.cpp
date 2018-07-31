@@ -77,9 +77,6 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
     whole_body_joint_index_.push_back(hsr_->GetJoint(whole_body_joint_names_[i])->GetDOFIndex());
   }
 
-  double open_hand = 1.0;
-  setEEFValue(open_hand);
-
 }
 
 FRASIEROpenRAVE::~FRASIEROpenRAVE(){
@@ -194,11 +191,6 @@ void FRASIEROpenRAVE::getActiveJointIndex(std::vector<int>& q_index){
   }
 }
 
-void FRASIEROpenRAVE::getWholeBodyJointIndex(std::vector<int>& q_index){
-  for (int i = 0; i < whole_body_joint_names_.size(); i++) {
-    q_index.push_back(hsr_->GetJoint(whole_body_joint_names_[i])->GetDOFIndex());
-  }
-}
 
 OpenRAVE::Transform FRASIEROpenRAVE::getRobotTransform() {
   return hsr_->GetLink(base_link_)->GetTransform();
@@ -283,20 +275,16 @@ void FRASIEROpenRAVE::updateJointStatesThread(){
 }
 
 void FRASIEROpenRAVE::playTrajectory(trajectory_msgs::JointTrajectory& traj){
-
   for (int i = 0; i < traj.points.size(); i++) {
     hsr_->SetDOFValues(traj.points[i].positions, 1, whole_body_joint_index_);
     hsr_->SetDOFVelocities(traj.points[i].velocities, 1, whole_body_joint_index_);
     ros::Duration(traj.points[1].time_from_start).sleep();
   }
-
 }
 
 void FRASIEROpenRAVE::moveToHomeState() {
-
   std::vector<double> q_home = {0, 0, 0, 0, 0, 0, 0, 0};
   hsr_->SetDOFValues(q_home, 1, whole_body_joint_index_);
-
 }
 
 void FRASIEROpenRAVE::setEEFValue(double &v) {

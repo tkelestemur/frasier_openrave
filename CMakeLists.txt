@@ -94,6 +94,7 @@ set(FRASIER_OPENRAVE_SRC
 	src/frasier_openrave_planner.cpp
   src/frasier_openrave_grasp_planner.cpp
 	src/fraiser_openrave_perception.cpp
+  src/frasier_openrave_utilities.cpp
 )
 
 add_library(${PROJECT_NAME} ${FRASIER_OPENRAVE_SRC})
