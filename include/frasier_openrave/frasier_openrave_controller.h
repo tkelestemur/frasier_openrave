@@ -32,15 +32,13 @@ enum MOVE_STATE{
 enum ARM_STATE{
     GRASP_CONF,
     GIVE_CONF,
-    GO_CONF,
-    DISH
+    GO_CONF
 };
 
 enum HEAD_STATE{
-    LOOK_TABLE_LEFT=1,
-    LOOK_TABLE_RIGHT=2,
-    LOOK_TABLE_FRONT=0,
-    LOOK_SHELF=3
+    LOOK_TABLE_LEFT,
+    LOOK_TABLE_RIGHT,
+    LOOK_TABLE_FRONT
 };
 
 enum GRIPPER_STATE{
@@ -51,50 +49,48 @@ enum GRIPPER_STATE{
 class FRASIERController{
 
 public:
-  FRASIERController(ros::NodeHandle n);
-  // ~FRASIERController();
-  void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
+    FRASIERController(ros::NodeHandle n);
+    // ~FRASIERController();
+    // void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
 
-  void moveToKnownState(MOVE_STATE state);
-  void moveHeadToKnownState(HEAD_STATE state);
-  void moveArmToKnownState(ARM_STATE state);
+    void moveToKnownState(MOVE_STATE state);
+    void moveHeadToKnownState(HEAD_STATE state);
+    void moveArmToKnownState(ARM_STATE state);
 
-//  bool filterTrajectory(trajectory_msgs::JointTrajectory& traj,
-//                        trajectory_msgs::JointTrajectory& traj_filtered);
+    void extractArmBaseTraj(trajectory_msgs::JointTrajectory whole_body_traj,
+                            trajectory_msgs::JointTrajectory& base_traj,
+                            trajectory_msgs::JointTrajectory& arm_traj);
 
+    void executeArmBaseTraj(trajectory_msgs::JointTrajectory& traj);
+    void executeWholeBodyTraj(trajectory_msgs::JointTrajectory& traj,
+                              bool execute_gripper=false);
+//    void executeWholeBodyTraj2(trajectory_msgs::JointTrajectory& traj);
+    void executeGraspTraj(trajectory_msgs::JointTrajectory& traj);
 
-  void extractArmBaseTraj(trajectory_msgs::JointTrajectory whole_body_traj,
-                           trajectory_msgs::JointTrajectory& base_traj,
-                           trajectory_msgs::JointTrajectory& arm_traj);
+    void graspOrRelease(GRIPPER_STATE state);
 
-  void executeArmBaseTraj(trajectory_msgs::JointTrajectory& traj);
-  void executeWholeBodyTraj(trajectory_msgs::JointTrajectory& traj,
-                            bool execute_gripper=false);
-  void executeGraspTraj(trajectory_msgs::JointTrajectory& traj);
+    void gripperThread();
+    void runGripperThread(geometry_msgs::Pose& pose);
 
-  void graspOrRelease(GRIPPER_STATE state);
-
-  void gripperThread();
-  void runGripperThread(geometry_msgs::Pose& pose);
 private:
-  ros::NodeHandle nh_;
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> arm_cli_;
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> base_cli_;
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> head_cli_;
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> whole_body_cli_;
-  actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> gripper_pos_cli_;
-  actionlib::SimpleActionClient<tmc_control_msgs::GripperApplyEffortAction> gripper_cli_;
+    ros::NodeHandle nh_;
+    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> arm_cli_;
+    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> base_cli_;
+    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> head_cli_;
+    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> whole_body_cli_;
+    actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> gripper_pos_cli_;
+    actionlib::SimpleActionClient<tmc_control_msgs::GripperApplyEffortAction> gripper_cli_;
 
-  ros::ServiceClient filter_traj_srv_;
-  geometry_msgs::Pose eef_target_pose_;
-
-
-  bool joint_state_flag_;
+    ros::ServiceClient filter_traj_srv_;
+    geometry_msgs::Pose eef_target_pose_;
 
 
-  boost::mutex joint_state_mutex_;
-  boost::thread gripper_thread_;
-  const double CONTROLLER_TIMEOUT = 50.0;
+    bool joint_state_flag_;
+
+
+    boost::mutex joint_state_mutex_;
+    boost::thread gripper_thread_;
+    const double CONTROLLER_TIMEOUT = 50.0;
 };
 
 

@@ -62,9 +62,10 @@ sudo apt install ros-kinetic-ecl
 
 
 ## TODO:
-- [x] cannot set goal angle for base_t_joint
-- [x] fix viewer (change to osg viewer)
+- [ ] visualize collison objects in rviz
 - [ ] redundant ik solver from openrave
 - [ ] point cloud updater using ROS
+- [x] cannot set goal angle for base_t_joint
+- [x] fix viewer (change to osg viewer)
 - [x] IK using trajopt
 - [x] planning using trajopt
