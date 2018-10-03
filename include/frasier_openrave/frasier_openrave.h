@@ -158,13 +158,13 @@ public:
 
     void generateEEFCurve();
 
-    std::vector<OpenRAVE::Transform> generatePlacePoses();
-
     Grasp generateGraspPose();
 
-    Grasp generateGraspPose(int table_pose, std::string &obj_name);
+    Grasp generateGraspPose(const std::string &obj_name);
 
-    OpenRAVE::Transform generatePlacePose(std::string &obj_name);
+//    OpenRAVE::Transform generatePlacePose(std::string &obj_name);
+
+//    std::vector<OpenRAVE::Transform> generatePlacePoses();
 
     // ROS
     void jointSensorCb(const sensor_msgs::JointState::ConstPtr &msg);
