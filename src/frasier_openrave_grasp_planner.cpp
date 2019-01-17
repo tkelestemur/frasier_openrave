@@ -115,7 +115,7 @@ Grasp FRASIEROpenRAVE::generateGraspPose() {
         for (const auto body : bodies) {
             std::string body_name = body->GetName();
 
-            if (body_name.substr(0, 9) == "table_obj") {
+            if (body_name.substr(0, 8) == "tabletop") {
 
                 OpenRAVE::Transform obj_pose = hsr_pose.inverse() * body->GetTransform();
 
@@ -140,27 +140,21 @@ Grasp FRASIEROpenRAVE::generateGraspPose() {
             grasp.pose.trans.x = object_pose.trans.x - 0.02;
             grasp.pose.trans.y = object_pose.trans.y;
             grasp.pose.trans.z = object_pose.trans.z;
-            grasp.graspable = true;
+            break;
         } else if (object_size.x < MAX_FINGER_APERTURE) {
             std::cout << "RAVE: selected top grasp for " << grasp.obj_name << std::endl;
             grasp.pose.rot = FRONT_TOP_EEF_ROT;
             grasp.pose.trans.x = object_pose.trans.x;
             grasp.pose.trans.y = object_pose.trans.y;
             grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
-            grasp.graspable = true;
+            break;
         } else {
-            grasp.graspable = false;
-        }
-
-        if (!grasp.graspable) {
             OpenRAVE::EnvironmentMutex::scoped_lock lockenv(env_->GetMutex());
             std::string not_graspable_obj_name = "not_graspable_" + grasp.obj_name;
             grasp_body->SetName(not_graspable_obj_name);
             std::cout << "RAVE: object not graspable." << std::endl;
             continue;
         }
-        grasp.graspable = true;
-        break;
 
     }
     return grasp;

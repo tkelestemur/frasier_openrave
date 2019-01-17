@@ -210,7 +210,7 @@ void FRASIEROpenRAVE::removeTableObjects() {
     for (auto body : bodies) {
         std::string body_name = body->GetName();
 
-        if (body_name.substr(0, 6) == "ground") {
+        if (body_name.substr(0, 8) == "tabletop") {
             env_->Remove(body);
         }
 

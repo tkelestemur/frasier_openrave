@@ -1,4 +1,4 @@
-#include <frasier_openrave/frasier_openrave_controller.h>
+    #include <frasier_openrave/frasier_openrave_controller.h>
 
 
 FRASIERController::FRASIERController(ros::NodeHandle n) : nh_(n),
@@ -311,7 +311,7 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
     else if(state == HEAD_STATE::LOOK_TABLE_FRONT){
         std::cout << "CONTROL: moving head towards front table... "  << std::endl;
         goal.trajectory.points[0].positions[0] = 0.0;
-        goal.trajectory.points[0].positions[1] = -1.15;
+        goal.trajectory.points[0].positions[1] = -0.50;
     }
     else if(state == HEAD_STATE::LOOK_SHELF_FRONT){
         std::cout << "CONTROL: moving head towards front table... "  << std::endl;
