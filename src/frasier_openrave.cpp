@@ -37,6 +37,8 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
     // OpenRAVE
     OpenRAVE::RaveInitialize(true);
     env_ = OpenRAVE::RaveCreateEnvironment();
+
+
     assert(env_);
     env_->SetDebugLevel(OpenRAVE::Level_Error);
 
@@ -85,6 +87,19 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
     for (int i = 0; i < whole_body_joint_names_.size(); i++) {
         whole_body_joint_index_.push_back(hsr_->GetJoint(whole_body_joint_names_[i])->GetDOFIndex());
     }
+
+
+//    std::string octomap_plugin_name = "or_octomap";
+//    if(OpenRAVE::RaveLoadPlugin(octomap_plugin_name)){
+//        std::cout <<"RAVE: octomap plugin loaded" << std::endl;
+//    }
+//    OpenRAVE::SensorSystemBasePtr octomap = OpenRAVE::RaveCreateSensorSystem(env_, octomap_plugin_name);
+//    std::string enable_output, enable_input, pc_topic, reset_topic;
+//    enable_input = "Enable";
+//    pc_topic = "/hsrb/head_rgbd_sensor/depth_registered/rectified_points";
+//    reset_topic = "ResetTopic";
+//    octomap->SendCommand(enable_output, enable_input);
+//    octomap->SendCommand(pc_topic, reset_topic);
 
 }
 
@@ -237,18 +252,18 @@ void FRASIEROpenRAVE::updateJointStatesThread() {
                     q[q_index[2]] = base_.theta;
 
 
-                    q[q_index[3]] = joints_.position[12];
-                    q[q_index[4]] = joints_.position[13];
-                    q[q_index[5]] = joints_.position[14];
-                    q[q_index[6]] = joints_.position[15];
-                    q[q_index[7]] = joints_.position[16];
-                    q[q_index[8]] = joints_.position[17];
-                    q[q_index[9]] = joints_.position[19];
-                    q[q_index[10]] = joints_.position[21];
-                    q[q_index[11]] = joints_.position[23];
-                    q[q_index[12]] = joints_.position[25];
-                    q[q_index[13]] = joints_.position[10];
-                    q[q_index[14]] = joints_.position[11];
+                    q[q_index[3]] = joints_.position[14];
+                    q[q_index[4]] = joints_.position[15];
+                    q[q_index[5]] = joints_.position[16];
+                    q[q_index[6]] = joints_.position[17];
+                    q[q_index[7]] = joints_.position[18];
+                    q[q_index[8]] = joints_.position[20];
+                    q[q_index[9]] = joints_.position[22];
+                    q[q_index[10]] = joints_.position[24];
+                    q[q_index[11]] = joints_.position[26];
+                    q[q_index[12]] = joints_.position[28];
+                    q[q_index[13]] = joints_.position[12];
+                    q[q_index[14]] = joints_.position[13];
 
 
                     // Set velocities TODO: Set velocities
@@ -256,18 +271,19 @@ void FRASIEROpenRAVE::updateJointStatesThread() {
                     // q[q_index[1]] = base_.y;
                     // q[q_index[2]] = base_.theta;
 
-                    q_v[q_index[3]] = joints_.velocity[12];
-                    q_v[q_index[4]] = joints_.velocity[13];
-                    q_v[q_index[5]] = joints_.velocity[14];
-                    q_v[q_index[6]] = joints_.velocity[15];
-                    q_v[q_index[7]] = joints_.velocity[16];
-                    q_v[q_index[8]] = joints_.velocity[17];
-                    q_v[q_index[9]] = joints_.velocity[19];
-                    q_v[q_index[10]] = joints_.velocity[21];
-                    q_v[q_index[11]] = joints_.velocity[23];
-                    q_v[q_index[12]] = joints_.velocity[25];
-                    q_v[q_index[13]] = joints_.velocity[10];
-                    q_v[q_index[14]] = joints_.velocity[11];
+                    q_v[q_index[3]] = joints_.velocity[14];
+                    q_v[q_index[4]] = joints_.velocity[15];
+                    q_v[q_index[5]] = joints_.velocity[16];
+                    q_v[q_index[6]] = joints_.velocity[17];
+                    q_v[q_index[7]] = joints_.velocity[18];
+                    q_v[q_index[8]] = joints_.velocity[20];
+                    q_v[q_index[9]] = joints_.velocity[22];
+                    q_v[q_index[10]] = joints_.velocity[24];
+                    q_v[q_index[11]] = joints_.velocity[26];
+                    q_v[q_index[12]] = joints_.velocity[28];
+                    q_v[q_index[13]] = joints_.velocity[12];
+                    q_v[q_index[14]] = joints_.velocity[13];
+
                 }
 
             }

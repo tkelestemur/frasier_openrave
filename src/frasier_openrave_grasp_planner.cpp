@@ -70,29 +70,35 @@ Grasp FRASIEROpenRAVE::generateGraspPose(const std::string &obj_name) {
         grasp.graspable = false;
         return grasp;
     }
-    
+
 //  OpenRAVE::Transform hsr_pose = hsr_->GetLink(base_link_)->GetTransform();
 
     OpenRAVE::Vector object_size = grasp_body->GetLink("base")->GetGeometry(0)->GetBoxExtents();
     OpenRAVE::Transform object_pose = grasp_body->GetTransform();
 
-    if (object_size.y < MAX_FINGER_APERTURE) {
-        std::cout << "RAVE: selected side grasp for " << grasp.obj_name << std::endl;
-        grasp.pose.rot = FRONT_EEF_ROT;
-        grasp.pose.trans.x = object_pose.trans.x - 0.02;
-        grasp.pose.trans.y = object_pose.trans.y;
-        grasp.pose.trans.z = object_pose.trans.z;
-        grasp.graspable = true;
-    } else if (object_size.x < MAX_FINGER_APERTURE) {
+//    if (object_size.y < MAX_FINGER_APERTURE && SIDE_GRASP) {
+//        std::cout << "RAVE: selected side grasp for " << grasp.obj_name << std::endl;
+//        grasp.pose.rot = FRONT_EEF_ROT;
+//        grasp.pose.trans.x = object_pose.trans.x - 0.02;
+//        grasp.pose.trans.y = object_pose.trans.y;
+//        grasp.pose.trans.z = object_pose.trans.z;
+//        grasp.graspable = true;
+//    } else if (object_size.x < MAX_FINGER_APERTURE) {
         std::cout << "RAVE: selected top grasp for " << grasp.obj_name << std::endl;
         grasp.pose.rot = FRONT_TOP_EEF_ROT;
         grasp.pose.trans.x = object_pose.trans.x;
         grasp.pose.trans.y = object_pose.trans.y;
-        grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.01;
+        if(obj_name == "ground_Banana"){
+            grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.04;
+        }
+        else{
+            grasp.pose.trans.z = object_pose.trans.z + object_size[2] + 0.04;
+        }
+
         grasp.graspable = true;
-    } else {
-        grasp.graspable = false;
-    }
+//    } else {
+//        grasp.graspable = false;
+//    }
 
     return grasp;
 }

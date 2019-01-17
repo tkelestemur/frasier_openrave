@@ -136,4 +136,10 @@ void FRASIEROpenRAVE::drawPoint(OpenRAVE::Vector &point) {
 
 }
 
+void FRASIEROpenRAVE::drawMesh(OpenRAVE::TriMesh &mesh) {
+    OpenRAVE::Vector color(1, 0, 0, 1);
+//    graph_handles_.push_back(env_->drawtrimesh(mesh.., 3*sizeof(mesh.vertices[0]), &mesh.indices[0], mesh.indices.size()/3, color));
+
+}
+
 

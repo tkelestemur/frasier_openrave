@@ -180,8 +180,8 @@ void FRASIERController::moveToKnownState(MOVE_STATE state){
 
         arm_traj.points[0].positions[0] = 0.0;
         arm_traj.points[0].positions[1] = 0.0;
-        arm_traj.points[0].positions[2] = 0.0;
-        arm_traj.points[0].positions[3] = 0.0;
+        arm_traj.points[0].positions[2] = -1.57;
+        arm_traj.points[0].positions[3] = -1.57;
         arm_traj.points[0].positions[4] = 0.0;
     }
     else if(state == MOVE_STATE::PICK){
@@ -207,6 +207,35 @@ void FRASIERController::moveToKnownState(MOVE_STATE state){
     arm_cli_.sendGoal(arm_goal);
     base_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
     arm_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+
+
+}
+
+void FRASIERController::moveBase(geometry_msgs::Pose2D& pose) {
+    std::cout << "CONTROL: moving base... "  << std::endl;
+
+    /////// BASE TRAJECTORY ///////
+    control_msgs::FollowJointTrajectoryGoal base_goal;
+    trajectory_msgs::JointTrajectory base_traj;
+
+    base_traj.joint_names.push_back("odom_x");
+    base_traj.joint_names.push_back("odom_y");
+    base_traj.joint_names.push_back("odom_t");
+
+    base_traj.points.resize(1);
+
+    base_traj.points[0].positions.resize(3);
+
+    base_traj.points[0].positions[0] = pose.x;
+    base_traj.points[0].positions[1] = pose.y;
+    base_traj.points[0].positions[2] = pose.theta;
+
+
+    base_traj.points[0].time_from_start = ros::Duration(5.0);
+
+    base_goal.trajectory = base_traj;
+    base_cli_.sendGoal(base_goal);
+    base_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
 
 
 }
@@ -282,8 +311,14 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
     else if(state == HEAD_STATE::LOOK_TABLE_FRONT){
         std::cout << "CONTROL: moving head towards front table... "  << std::endl;
         goal.trajectory.points[0].positions[0] = 0.0;
-        goal.trajectory.points[0].positions[1] = -0.60;
+        goal.trajectory.points[0].positions[1] = -1.15;
     }
+    else if(state == HEAD_STATE::LOOK_SHELF_FRONT){
+        std::cout << "CONTROL: moving head towards front table... "  << std::endl;
+        goal.trajectory.points[0].positions[0] = 0.0;
+        goal.trajectory.points[0].positions[1] = 0.0;
+    }
+
 
 
     goal.trajectory.points[0].time_from_start = ros::Duration(2.0);

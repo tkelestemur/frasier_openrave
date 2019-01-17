@@ -449,7 +449,7 @@ void FRASIEROpenRAVE::smoothTrajectory(trajectory_msgs::JointTrajectory &traj,
   ecl::WayPoint<ecl::JointAngles> waypoint(no_dof);
   ecl::Array<double> acc_limits(no_dof);
 
-  acc_limits << 0.3, 0.3, 0.5, 0.15, 1.0, 1.0, 1.0, 1.0;
+  acc_limits << 0.3-0.1, 0.3-0.1, 0.5-0.2, 0.15, 1.0, 1.0, 1.0, 1.0;
 
   for (int i = 0; i < no_waypoints; i++) {
 

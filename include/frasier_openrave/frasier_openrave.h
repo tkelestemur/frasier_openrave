@@ -148,6 +148,8 @@ public:
 
     void drawPoint(OpenRAVE::Vector &point);
 
+    void drawMesh(OpenRAVE::TriMesh& mesh);
+
     trajectory_msgs::JointTrajectory eigenMatrixToTraj(Eigen::MatrixXd &traj);
 
     geometry_msgs::Pose orTransformToROSPose(OpenRAVE::Transform &transform);

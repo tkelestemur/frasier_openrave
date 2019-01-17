@@ -6,6 +6,7 @@
 #include <ros/package.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Pose2D.h>
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <control_msgs/FollowJointTrajectoryGoal.h>
@@ -38,7 +39,8 @@ enum ARM_STATE{
 enum HEAD_STATE{
     LOOK_TABLE_LEFT,
     LOOK_TABLE_RIGHT,
-    LOOK_TABLE_FRONT
+    LOOK_TABLE_FRONT,
+    LOOK_SHELF_FRONT
 };
 
 enum GRIPPER_STATE{
@@ -46,6 +48,9 @@ enum GRIPPER_STATE{
     RELEASE
 };
 
+enum BASE_STATE{
+    FORWARD
+};
 class FRASIERController{
 
 public:
@@ -56,6 +61,7 @@ public:
     void moveToKnownState(MOVE_STATE state);
     void moveHeadToKnownState(HEAD_STATE state);
     void moveArmToKnownState(ARM_STATE state);
+    void moveBase(geometry_msgs::Pose2D& pose);
 
     void extractArmBaseTraj(trajectory_msgs::JointTrajectory whole_body_traj,
                             trajectory_msgs::JointTrajectory& base_traj,
