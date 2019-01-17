@@ -54,8 +54,8 @@
   <depend>libpcl-all-dev</depend>
   <depend>pcl_conversions</depend>
   <depend>pcl_msgs</depend>
-  <depend>openrave_catkin</depend>
-  <depend>or_octomap_plugin</depend>
+  <!--<depend>openrave_catkin</depend>-->
+  <!--<depend>or_octomap_plugin</depend>-->
 
 
   <!-- The export tag contains other, unspecified, tags -->
