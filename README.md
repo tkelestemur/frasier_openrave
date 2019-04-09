@@ -41,7 +41,7 @@ Install dependencies:
 sudo apt install libopenscenegraph-dev libeigen3-dev
 ```
 Trajopt uses Gurobi for the optimization. Install Gurobi by following the instructions [here](https://www.gurobi.com/registration/download-reg). You can get a free acadamic license if you have .edu email.
-1. `git clone  git@github.com:tkelestemur/trajopt.git`
+1. `git clone https://github.com/tkelestemur/trajopt.git`
 2. `cd trajopt && mkdir build && cd build`  
 3. `cmake .. -DGUROBI_LIBRARY=/opt/gurobi801/linux64/lib/libgurobi80.so`
 4. `make -j4`
