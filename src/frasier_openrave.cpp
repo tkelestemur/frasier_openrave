@@ -132,6 +132,11 @@ void FRASIEROpenRAVE::baseStateCb(const geometry_msgs::Pose2D::ConstPtr &msg) {
     base_state_flag_ = true;
 }
 
+void FRASIEROpenRAVE::ResetEnv() {
+    std::cout << "FRASIEROpenRAVE: Environment reset." << std::endl;
+    env_->Reset();
+}
+
 sensor_msgs::JointState FRASIEROpenRAVE::getWholeBodyState() {
 
     sensor_msgs::JointState state;
@@ -316,4 +321,3 @@ void FRASIEROpenRAVE::setEEFValue(double &v) {
     q.push_back(v);
     hsr_->SetDOFValues(q, 1, eef_joint_index_);
 }
-
