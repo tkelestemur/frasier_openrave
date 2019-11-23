@@ -290,9 +290,7 @@ void FRASIERController::moveArmToKnownState(ARM_STATE state) {
 
 void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
 
-
     control_msgs::FollowJointTrajectoryGoal goal;
-
     goal.trajectory.joint_names.push_back("head_pan_joint");
     goal.trajectory.joint_names.push_back("head_tilt_joint");
 
@@ -318,11 +316,13 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
         goal.trajectory.points[0].positions[0] = 0.0;
         goal.trajectory.points[0].positions[1] = 0.0;
     }
-
-
+    else if(state == HEAD_STATE::LOOK_FLOOR){
+        std::cout << "CONTROL: moving head towards floor.. "  << std::endl;
+        goal.trajectory.points[0].positions[0] = 0.0;
+        goal.trajectory.points[0].positions[1] = -0.80;
+    }
 
     goal.trajectory.points[0].time_from_start = ros::Duration(2.0);
-
     head_cli_.sendGoalAndWait(goal, ros::Duration(CONTROLLER_TIMEOUT));
 }
 

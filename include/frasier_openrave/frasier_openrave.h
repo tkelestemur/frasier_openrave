@@ -11,6 +11,7 @@
 #include <pcl_msgs/PolygonMesh.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <trajectory_msgs/JointTrajectory.h>
+//#include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
 #include <ecl/exceptions/standard_exception.hpp>
 #include <ecl/manipulators.hpp>
 #include <ecl/exceptions.hpp>
@@ -105,8 +106,6 @@ public:
 
 
     // Motion planning
-    void planRRT(std::vector<double> &q);
-
     Json::Value createJsonValueTraj(EEFPoseGoals &eef_goals);
 
     Json::Value createJsonValueTraj(JointPosGoals &joint_goals);

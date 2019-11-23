@@ -20,6 +20,7 @@ endif()
 find_package(catkin REQUIRED COMPONENTS
 #  openrave_catkin
 #  or_octomap_plugin
+	moveit_core
   geometry_msgs
   roscpp
   sensor_msgs
@@ -36,7 +37,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenRAVE REQUIRED)
 find_package(Eigen3 REQUIRED)
 set(OpenRAVE_BOTH_LIBRARIES ${OpenRAVE_LIBRARIES} ${OpenRAVE_CORE_LIBRARIES})
-set(trajopt_LIBRARIES 
+set(trajopt_LIBRARIES
 	${TRAJOPT_DIR}/build/lib/libjson.so 
 	${TRAJOPT_DIR}/build/lib/libtrajopt.so
 	${TRAJOPT_DIR}/build/lib/libsco.so 
