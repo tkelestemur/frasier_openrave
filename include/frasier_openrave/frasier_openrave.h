@@ -98,6 +98,8 @@ public:
 
     void getActiveJointIndex(std::vector<int> &q_index);
 
+    void ResetEnv();
+
     // void getWholeBodyJointIndex(std::vector<int> &q_index);
 
     OpenRAVE::Transform getRobotTransform();
