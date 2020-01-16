@@ -103,7 +103,7 @@ void FRASIERController::executeWholeBodyTraj(trajectory_msgs::JointTrajectory& t
         gripper_pos_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
     }else{
         whole_body_cli_.sendGoal(whole_body_goal);
-        whole_body_cli_.waitForResult(ros::Duration(CONTROLLER_TIMEOUT));
+        whole_body_cli_.waitForResult();
     }
 
 }
@@ -185,7 +185,7 @@ void FRASIERController::moveToKnownState(MOVE_STATE state){
         arm_traj.points[0].positions[4] = 0.0;
     }
     else if(state == MOVE_STATE::PICK){
-        arm_traj.points[0].positions[0] = 0.69;
+        arm_traj.points[0].positions[0] = 0.40;
         arm_traj.points[0].positions[1] = -2.60;
         arm_traj.points[0].positions[2] = 0.0;
         arm_traj.points[0].positions[3] = -0.54;
@@ -255,18 +255,26 @@ void FRASIERController::moveArmToKnownState(ARM_STATE state) {
     arm_traj.points.resize(1);
     arm_traj.points[0].positions.resize(5);
     if(state == ARM_STATE::GRASP_CONF){
-        arm_traj.points[0].positions[0] = 0.69;
+        arm_traj.points[0].positions[0] = 0.40;
         arm_traj.points[0].positions[1] = -2.60;
         arm_traj.points[0].positions[2] = 0.0;
         arm_traj.points[0].positions[3] = -0.54;
         arm_traj.points[0].positions[4] = 0.0;
     }
+    else if(state == ARM_STATE::PLACE_TABLE_ONE){
+        arm_traj.points[0].positions[0] = 0.678;
+        arm_traj.points[0].positions[1] = 0.0;
+        arm_traj.points[0].positions[2] = -M_PI/2;
+        arm_traj.points[0].positions[3] = -M_PI/2;
+        arm_traj.points[0].positions[4] = 0.0;
+    }
 
-    else if(state == ARM_STATE::GROUND_GRASP_CONF){
-          arm_traj.points[0].positions[0] = 0.0;
-          arm_traj.points[0].positions[1] = 0.0;
-          arm_traj.points[0].positions[2] = -1.56;
-          arm_traj.points[0].positions[3] = -1.57;
+
+    else if(state == ARM_STATE::PLACE_TABLE_TWO){
+          arm_traj.points[0].positions[0] = 0.678;
+          arm_traj.points[0].positions[1] = -1.07;
+          arm_traj.points[0].positions[2] = -0.039;
+          arm_traj.points[0].positions[3] = -0.54;
           arm_traj.points[0].positions[4] = 0.0;
       }
 
@@ -281,7 +289,7 @@ void FRASIERController::moveArmToKnownState(ARM_STATE state) {
     else if (state == ARM_STATE::GO_CONF) {
         arm_traj.points[0].positions[0] = 0.0;
         arm_traj.points[0].positions[1] = 0.0;
-        arm_traj.points[0].positions[2] = 0.0;
+        arm_traj.points[0].positions[2] = -M_PI/2;
         arm_traj.points[0].positions[3] = -M_PI/2;
         arm_traj.points[0].positions[4] = 0.0;
     }
@@ -317,7 +325,7 @@ void FRASIERController::moveHeadToKnownState(HEAD_STATE state) {
     else if(state == HEAD_STATE::LOOK_TABLE_FRONT){
         std::cout << "CONTROL: moving head towards front table... "  << std::endl;
         goal.trajectory.points[0].positions[0] = 0.0;
-        goal.trajectory.points[0].positions[1] = -0.50;
+        goal.trajectory.points[0].positions[1] = -0.60;
     }
     else if(state == HEAD_STATE::LOOK_SHELF_FRONT){
         std::cout << "CONTROL: moving head towards front table... "  << std::endl;

@@ -475,7 +475,7 @@ void FRASIEROpenRAVE::smoothTrajectory(trajectory_msgs::JointTrajectory &traj,
 
   std::cout << "RAVE: smoothing is done! total duration : " << ecl_traj.duration() << std::endl;
   int N = 100;
-  traj_smoothed.header.stamp = ros::Time::now();
+//  traj_smoothed.header.stamp = ros::Time::now();
   traj_smoothed.joint_names.resize(traj.joint_names.size());
   traj_smoothed.joint_names = traj.joint_names;
   traj_smoothed.points.resize(N);
