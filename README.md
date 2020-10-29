@@ -3,7 +3,7 @@
 ## Installation
 
 Dependencies:
-* [ROS Kinetic](http://wiki.ros.org/kinetic/Installation)
+* [ROS Melodic](http://wiki.ros.org/melodic/Installation)
 * [HSR Software](https://docs.hsr.io/manual_en/index.html)
 * [OpenRAVE](http://openrave.org)
 * [TrajOpt](http://rll.berkeley.edu/trajopt/doc/sphinx_build/html/)
@@ -11,30 +11,12 @@ Dependencies:
 
 **OpenRAVE Installation**   
 Install dependencies:
-```
-sudo apt install cmake g++ git ipython minizip
-python-dev python-h5py python-numpy python-scipy python-sympy qt4-dev-tools
-```
-```
-sudo apt install libassimp-dev libavcodec-dev libavformat-dev libavformat-dev libboost-all-dev libboost-date-time-dev
-libbullet-dev libfaac-dev libglew-dev libgsm1-dev liblapack-dev liblog4cxx-dev libmpfr-dev libode-dev libogg-dev   
-libpcrecpp0v5 libpcre3-dev libqhull-dev libqt4-dev libsoqt-dev-common libsoqt4-dev libswscale-dev
-libswscale-dev libvorbis-dev libx264-dev libxml2-dev libxvidcore-dev
-```
-Build OpenRAVE from source:   
-1. `git clone  https://github.com/rdiankov/openrave.git`
-2. `cd openrave && mkdir build && cd build`  
-3. `cmake .. -DOPENRAVE_PLUGIN_QTOSGRAVE=OFF`
-4. `make -j5`
-5. `sudo make install`   
-6. Add the following to `.bashrc`:
+* Please follow the instructions [here](https://github.com/RIVeR-Lab/openrave).
+* Add the following to `.bashrc`:
 ```
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(openrave-config --python-dir)/openravepy/_openravepy_
 export PYTHONPATH=$PYTHONPATH:$(openrave-config --python-dir)
 ```
-Note: OSG is turned off because OpenRAVE requires OSG 3.4 which is creating problems for TrajOpt compiliation.
-The package uses QtCoin for the GUI.
-
 **TrajOpt Installation**   
 Install dependencies:
 ```
@@ -49,7 +31,6 @@ Trajopt uses Gurobi for the optimization. Install Gurobi by following the instru
 ```
 export TRAJOPT_HOME=/path/to/trajopt/folder
 ```
-
 
 **Package Installation**   
 Install dependencies:
