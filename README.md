@@ -1,6 +1,7 @@
 # frasier_openrave
 
 ## Installation
+Note this instructions are tested on Ubuntu 18.04.
 
 Dependencies:
 * [ROS Melodic](http://wiki.ros.org/melodic/Installation)
@@ -39,7 +40,7 @@ export TRAJOPT_HOME=/path/to/trajopt/folder
 **Package Installation**   
 Install dependencies:
 ```
-sudo apt install ros-kinetic-ecl
+sudo apt install ros-melodic-ecl
 ```
 1. `cd catkin_ws/src`
 2. `git clone  https://github.com/tkelestemur/frasier_openrave.git`
