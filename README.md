@@ -9,9 +9,13 @@ Dependencies:
 * [TrajOpt](http://rll.berkeley.edu/trajopt/doc/sphinx_build/html/)
 * [Gurobi](http://www.gurobi.com/)
 
+**HSR Installation** 
+* Follow the the instructions [here](https://docs.hsr.io/archives/hsrb_user_manual/2004/en/howto/pc_install.html).
+* If you don't have the login information, please ask Tarik Kelestemur.
+
 **OpenRAVE Installation**   
 Install dependencies:
-* Please follow the instructions [here](https://github.com/RIVeR-Lab/openrave).
+* Follow the instructions [here](https://github.com/RIVeR-Lab/openrave).
 * Add the following to `.bashrc`:
 ```
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(openrave-config --python-dir)/openravepy/_openravepy_
