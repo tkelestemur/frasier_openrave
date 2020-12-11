@@ -18,9 +18,9 @@ endif()
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-#  openrave_catkin
-#  or_octomap_plugin
-	moveit_core
+# openrave_catkin
+# or_octomap_plugin
+# moveit_core
   geometry_msgs
   roscpp
   sensor_msgs
@@ -28,8 +28,8 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   actionlib
   ecl_manipulators
-#  hacd_interface
   pcl_conversions
+#  hacd_interface
 )
 
 ## System dependencies are found with CMake's conventions
