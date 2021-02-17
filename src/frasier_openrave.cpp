@@ -47,6 +47,7 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
     plan_plotter_ = false;
 
     base_link_ = "base_link";
+    eef_link_ = "hand_palm_link";
 
     joint_names_ = {"base_x_joint", "base_y_joint", "base_t_joint", "arm_lift_joint", "arm_flex_joint",
                     "arm_roll_joint", "wrist_flex_joint", "wrist_roll_joint", "hand_motor_joint",
@@ -75,7 +76,7 @@ FRASIEROpenRAVE::FRASIEROpenRAVE(ros::NodeHandle n, bool run_viewer, bool real_r
 
     if (real_robot) {
         std::cout << "RAVE: starting joint update thread..." << std::endl;
-        joint_state_thread_ = boost::thread(boost::bind(&FRASIEROpenRAVE::updateJointStatesThread, this));
+    joint_state_thread_ = boost::thread(boost::bind(&FRASIEROpenRAVE::updateJointStatesThread, this));
     }
 
     if (run_viewer) {
@@ -222,6 +223,10 @@ void FRASIEROpenRAVE::getActiveJointIndex(std::vector<int> &q_index) {
 
 OpenRAVE::Transform FRASIEROpenRAVE::getRobotTransform() {
     return hsr_->GetLink(base_link_)->GetTransform();
+}
+
+OpenRAVE::Transform FRASIEROpenRAVE::getEEFTransform() {
+    return hsr_->GetLink(eef_link_)->GetTransform();
 }
 
 geometry_msgs::Pose2D FRASIEROpenRAVE::getRobotPose() {

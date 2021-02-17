@@ -103,6 +103,7 @@ public:
     // void getWholeBodyJointIndex(std::vector<int> &q_index);
 
     OpenRAVE::Transform getRobotTransform();
+    OpenRAVE::Transform getEEFTransform();
 
     geometry_msgs::Pose2D getRobotPose();
 
@@ -197,7 +198,7 @@ private:
     geometry_msgs::Pose2D base_;
     sensor_msgs::JointState joints_;
 
-    std::string joint_state_topic_, base_state_topic_, base_link_;
+    std::string joint_state_topic_, base_state_topic_, base_link_, eef_link_;
     std::string robot_name_, manip_name_, planner_name_;
     std::string package_path_, config_path_, worlds_path_;
     std::vector<std::string> joint_names_, base_names_, whole_body_joint_names_;
